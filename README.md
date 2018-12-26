@@ -31,6 +31,22 @@ python few_shot_imprinted.py --binary --config configs/fcn8s_pascal_imprinted.ym
 python vis_preds.py VIS_FOLDER
 ```
 
+## Code Structure 
+
+* Data Loaders:
+  * pascal_voC_loader.py : loader used in training on large scale data on fold x, classes from Ltest are set to 250 (ignored).
+  * pascal_voc_5i_loader.py : loader used in fewshot setting, uses exact loader from oslsm in loader/oslsm/ss_datalayer.py.
+* Models:
+  * dilated_fcn8s: FCN8s with dilated convolution and removed last 2 pooling layers.
+  * fcn8s: original FCN8s architecture without padding.
+* Imprinting Functionality: Inside each model 3 methods need to exist.
+  * imprint: computes the imprinted weights.
+  * extract: extract the embeddings using masked/weighted avg pooling.
+  * reverse_imrpint: reset weights to original weights for the next samples support set.
+* Imprinting Utilities: inside ptsemseg/models/utils.py
+  * compute_weights: based on adaptive formulation inspirign from adaptive correlation filters.
+  * masked_embeddings: masked avg pooling based on class index
+
 Based on semantic segmentation repo:
 [SemSeg](https://github.com/meetshah1995/pytorch-semseg)
 
