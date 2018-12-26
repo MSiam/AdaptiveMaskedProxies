@@ -26,11 +26,11 @@ python few_shot_imprinted.py --binary --config configs/fcn8s_pascal_imprinted.ym
 * fold: 0 | 1 | 2 | 3
 * k_shot: 1 | 5
 
-Based on semantic segmentation repo:
-[SemSeg](https://github.com/meetshah1995/pytorch-semseg)
-
 ## Visualize predictions and support set
 ```
 python vis_preds.py VIS_FOLDER
 ```
+
+Based on semantic segmentation repo:
+[SemSeg](https://github.com/meetshah1995/pytorch-semseg)
 
