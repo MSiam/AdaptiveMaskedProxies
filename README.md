@@ -1,9 +1,6 @@
 
 # Adaptive Masked Imprinted Weights for Few Shot Segmentation
 
-Based on semantic segmentaiton repo:
-[SemSeg](https://github.com/meetshah1995/pytorch-semseg)
-
 ## Train on Large Scale Data
 
 ```
@@ -13,8 +10,10 @@ python train.py --config configs/fcn8s_pascal.yaml
 ## Test few shot setting 
 
 ```
-python few_shot_imprinted.py --binary --config configs/fcn8s_pascal_imprinted.yml --model_path MODEL_PATH
+python few_shot_imprinted.py --binary --config configs/fcn8s_pascal_imprinted.yml --model_path MODEL_PATH --out_dir OUT_DIR
 ```
+* MODEL_PATH: path for model trained on same fold testing upon.
+* OUT_DIR: output directory to save visualization if needed. (optional)
 
 ## Configuration
 * arch: dilated_fcn8s | fcn8s
@@ -26,4 +25,12 @@ python few_shot_imprinted.py --binary --config configs/fcn8s_pascal_imprinted.ym
 * dataset: pascal5i (few shot OSLSM setting)| pascal
 * fold: 0 | 1 | 2 | 3
 * k_shot: 1 | 5
+
+Based on semantic segmentation repo:
+[SemSeg](https://github.com/meetshah1995/pytorch-semseg)
+
+## Visualize predictions and support set
+```
+python vis_preds.py VIS_FOLDER
+```
 

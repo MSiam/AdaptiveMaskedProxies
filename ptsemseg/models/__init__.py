@@ -5,14 +5,6 @@ from ptsemseg.models.fcn import *
 from ptsemseg.models.vgg_osvos import *
 from ptsemseg.models.dilated_fcn import *
 from ptsemseg.models.dilated_fcn_highskip import *
-from ptsemseg.models.segnet import *
-from ptsemseg.models.unet import *
-from ptsemseg.models.pspnet import *
-from ptsemseg.models.deeplabv3 import *
-from ptsemseg.models.icnet import *
-from ptsemseg.models.linknet import *
-from ptsemseg.models.frrn import *
-
 
 def get_model(model_dict, n_classes, version=None):
     name = model_dict['arch']

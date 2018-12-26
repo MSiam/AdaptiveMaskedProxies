@@ -140,23 +140,8 @@ def validate(cfg, args):
         # 2- Infer on the query image
         model.eval()
         with torch.no_grad():
-            done = False
-            count = 0
-            while not done and count < 5:
-                try:
-                    outputs = model(qry_images)
-                    done = True
-                    break
-                except Exception as e:
-                    print('Caught an exception ', e)
-                    torch.cuda.empty_cache()
-                    count += 1
-            if done:
-                pred = outputs.data.max(1)[1].cpu().numpy()
-            else:
-                print('Sample didnt go through!!!')
-                torch.cuda.empty_cache()
-                break
+            outputs = model(qry_images)
+            pred = outputs.data.max(1)[1].cpu().numpy()
 
         # Reverse the last imprinting (Few shot setting only not Continual Learning setup yet)
         model.reverse_imprinting(nchannels, args.cl)
