@@ -1,0 +1,33 @@
+model:
+    arch: dilated_fcn8s
+    lower_dim: True
+    weighted_mask: False
+    use_norm: False
+    use_norm_weights: False
+    offsetting: False
+    use_scale: False
+data:
+    dataset: pascal5i
+    fold: 0
+    n_classes: 16
+    k_shot: 1
+    train_split: train_aug
+    val_split: val
+    img_rows: 500
+    img_cols: 500
+    path: /home/menna/Datasets/VOCdevkit/VOC2012/
+training:
+    train_iters: 2
+    batch_size: 1
+    val_interval: 100000000
+    n_workers: 1
+    print_interval: 50
+    optimizer:
+        name: 'rmsprop'
+        lr: 1.0e-4
+        weight_decay: 0.0005
+    loss:
+        name: 'cross_entropy'
+        size_average: False
+    lr_schedule:
+    resume: fcn8s_pascal_best_model.pkl
