@@ -10,7 +10,7 @@ python train.py --config configs/fcn8s_pascal.yaml
 ## Test few shot setting 
 
 ```
-python few_shot_imprinted.py --binary --config configs/fcn8s_pascal_imprinted.yml --model_path MODEL_PATH --out_dir OUT_DIR
+python fewshot_imprinted.py --binary --config configs/fcn8s_pascal_imprinted.yml --model_path MODEL_PATH --out_dir OUT_DIR
 ```
 * MODEL_PATH: path for model trained on same fold testing upon.
 * OUT_DIR: output directory to save visualization if needed. (optional)
