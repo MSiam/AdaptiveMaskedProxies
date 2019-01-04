@@ -35,9 +35,10 @@ RUN mkdir -p -m 700 /root/.jupyter/ && \
 ENV LANG C.UTF-8
 
 RUN conda install -y numpy pymongo scipy pandas jupyter pillow requests matplotlib tqdm \
-    h5py pytorch
+    h5py pytorch torchvision opencv
 
-RUN pip install pyyaml celery tensorflow-gpu==1.8.0 tensorboard==1.8.0 statsmodels gitpython
+RUN pip install pyyaml celery tensorflow-gpu==1.8.0 tensorboard==1.8.0 statsmodels gitpython \ 
+    scikit-image opencv-python scikit-learn
 
 ENTRYPOINT [ "/usr/bin/tini", "--" ]
 
