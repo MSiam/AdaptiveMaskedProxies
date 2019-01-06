@@ -686,7 +686,7 @@ class PASCAL:
                     anns.append(dict(image_name=item, mask_name=item, class_ids=[class_id]))
             elif read_mode == PASCAL_READ_MODES.SEMANTIC_ALL:
                 anns.append(dict(image_name=item, mask_name=item, class_ids=class_ids))
-        with open(self.get_anns_path(read_mode), 'w') as f:
+        with open(self.get_anns_path(read_mode), 'wb') as f:
             pickle.dump(anns, f)
 
     def load_anns(self, read_mode):
