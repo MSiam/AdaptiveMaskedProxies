@@ -37,8 +37,8 @@ ENV LANG C.UTF-8
 RUN conda install -y pymongo pandas jupyter pillow requests matplotlib tqdm \
     h5py pytorch=0.4.1 opencv
 
-RUN pip install numpy==1.15.3 scipy==0.19.0 torchvision==0.2.0 pyyaml celery tensorflow-gpu==1.8.0 tensorboard==1.8.0 statsmodels gitpython \ 
-    scikit-image opencv-python scikit-learn googledrivedownloader
+RUN pip install pyyaml celery tensorflow-gpu==1.8.0 tensorboard==1.8.0 statsmodels gitpython \ 
+    scikit-image opencv-python scikit-learn googledrivedownloader scipy==0.19.0 torch==0.14.1 torchvision==0.2.1
 
 ENTRYPOINT [ "/usr/bin/tini", "--" ]
 
