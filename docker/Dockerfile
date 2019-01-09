@@ -24,7 +24,7 @@ RUN apt-get install -y curl grep sed dpkg && \
 
 ENV PATH /opt/conda/bin:$PATH
 
-RUN conda install python=3.6.0
+RUN conda install python=3.6.7
 
 RUN mkdir -p -m 700 /root/.jupyter/ && \
     echo "c.NotebookApp.ip = '0.0.0.0'" >> /root/.jupyter/jupyter_notebook_config.py && \
@@ -34,10 +34,10 @@ RUN mkdir -p -m 700 /root/.jupyter/ && \
 # > At the moment, setting "LANG=C" on a Linux system *fundamentally breaks Python 3*, and that's not OK.
 ENV LANG C.UTF-8
 
-RUN conda install -y numpy pymongo scipy pandas jupyter pillow requests matplotlib tqdm \
-    h5py pytorch torchvision opencv
+RUN conda install -y pymongo pandas jupyter pillow requests matplotlib tqdm \
+    h5py pytorch=0.4.1 opencv
 
-RUN pip install pyyaml celery tensorflow-gpu==1.8.0 tensorboard==1.8.0 statsmodels gitpython \ 
+RUN pip install numpy==1.15.3 scipy==0.19.0 torchvision==0.2.0 pyyaml celery tensorflow-gpu==1.8.0 tensorboard==1.8.0 statsmodels gitpython \ 
     scikit-image opencv-python scikit-learn googledrivedownloader
 
 ENTRYPOINT [ "/usr/bin/tini", "--" ]
