@@ -1,5 +1,5 @@
 model:
-    arch: dilated_fcn8s_highskip
+    arch: dilated_fcn8s
     lower_dim: True
     weighted_mask: False
     use_norm: False
