@@ -125,7 +125,7 @@ def validate(cfg, args):
         print('No Continual Learning of Bg Class')
         model.save_original_weights()
 
-    alpha = 0.5
+    alpha = 0.2
     for i, (sprt_images, sprt_labels, qry_images, qry_labels,
             original_sprt_images, original_qry_images) in enumerate(valloader):
         print('Starting iteration ', i)
@@ -179,7 +179,10 @@ def validate(cfg, args):
             gt,pred = post_process(gt, pred)
 
         if args.binary:
-            iou_list.append(running_metrics.update_binary(gt, pred))
+            if args.binary == 1:
+                iou_list.append(running_metrics.update_binary(gt, pred))
+            else:
+                running_metrics.update(gt, pred)
         else:
             running_metrics.update(gt, pred)
 
@@ -190,7 +193,12 @@ def validate(cfg, args):
                 save_vis(outputs, pred, gt, i, args.out_dir)
 
     if args.binary:
-        print("Binary Mean IoU ", np.mean(iou_list))
+        if args.binary == 1:
+            print("Binary Mean IoU ", np.mean(iou_list))
+        else:
+            score, class_iou = running_metrics.get_scores()
+            for k, v in score.items():
+                print(k, v)
     else:
         score, class_iou = running_metrics.get_scores()
         for k, v in score.items():
