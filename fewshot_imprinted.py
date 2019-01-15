@@ -151,7 +151,10 @@ def validate(cfg, args):
             gt, pred = post_process(gt, pred)
 
         if args.binary:
-            iou_list.append(running_metrics.update_binary(gt, pred))
+            if args.binary == 1:
+                iou_list.append(running_metrics.update_binary(gt, pred))
+            else:
+                running_metrics.update(gt, pred)
         else:
             running_metrics.update(gt, pred)
 
@@ -162,7 +165,12 @@ def validate(cfg, args):
                 save_vis(outputs, pred, gt, i, args.out_dir)
 
     if args.binary:
-        print("Binary Mean IoU ", np.mean(iou_list))
+        if args.binary == 1:
+            print("Binary Mean IoU ", np.mean(iou_list))
+        else:
+            score, class_iou = running_metrics.get_scores()
+            for k, v in score.items():
+                print(k, v)
     else:
         score, class_iou = running_metrics.get_scores()
         for k, v in score.items():
@@ -195,10 +203,10 @@ if __name__ == "__main__":
         help="Enable evaluation with time (fps) measurement |\
                               True by default",
     )
-    parser.add_argument(
+        parser.add_argument(
         "--binary",
-        dest="binary",
-        action="store_true",
+        type=int,
+        default=0,
         help="Evaluate binary or full nclasses",
     )
     parser.add_argument(
