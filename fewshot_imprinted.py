@@ -203,7 +203,7 @@ if __name__ == "__main__":
         help="Enable evaluation with time (fps) measurement |\
                               True by default",
     )
-        parser.add_argument(
+    parser.add_argument(
         "--binary",
         type=int,
         default=0,
