@@ -16,7 +16,7 @@ python fewshot_imprinted.py --binary BINARY_FLAG --config configs/fcn8s_pascal_i
 * OUT_DIR: output directory to save visualization if needed. (optional)
 * BINARY_FLAG: 0: evaluates on 17 classes (15 classes previously trained+Bg+New class), 1: evaluate binary with OSLSM method, 2: evaluates binary using coFCN method.
 ## Configuration
-* arch: dilated_fcn8s | fcn8s
+* arch: dilated_fcn8s | fcn8s | reduced_fcn8s
 * lower_dim: True (uses 256 nchannels in last layer) | False (uses 4096)
 * weighted_mask: True (uses weighted avg pooling based on distance transform)| False (uses mased avg pooling)
 * use_norm: True (normalize embeddings during inference)| False
@@ -30,6 +30,9 @@ python fewshot_imprinted.py --binary BINARY_FLAG --config configs/fcn8s_pascal_i
 ```
 python vis_preds.py VIS_FOLDER
 ```
+
+## Guide to Reproducing Experiments in the paper
+Check Experiments.md
 
 Based on semantic segmentation repo:
 [SemSeg](https://github.com/meetshah1995/pytorch-semseg)
