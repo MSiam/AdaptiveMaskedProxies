@@ -1,4 +1,8 @@
 
+* Download [PASCAL VOC 2012 dataset](http://host.robots.ox.ac.uk/pascal/VOC/voc2012/index.html#devkit)
+* Download [SBD dataset](http://home.bharathh.info/pubs/codes/SBD/download.html) + Use [rain.txt](http://home.bharathh.info/pubs/codes/SBD/train_noval.txt) provided by SBD instead of PASCAL.
+* Modify config.json path to your SBD_PATH
+* In all Experiments modify in the config files "path" to the PASCAL_VOC_PATH
 
 # Reproducing experiments in Table 2 with finetuning
 

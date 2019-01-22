@@ -1,6 +1,13 @@
 
 # Adaptive Masked Imprinted Weights for Few Shot Segmentation
 
+## Environment setup
+
+```
+virtualenv --system-site-packages -p python3 ./venv
+pip install -r requirements.txt
+```
+
 ## Train on Large Scale Data
 
 ```
