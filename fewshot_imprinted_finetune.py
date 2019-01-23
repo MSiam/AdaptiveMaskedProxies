@@ -233,8 +233,8 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--binary",
-        dest="binary",
-        action="store_true",
+        type=int,
+        default=0,
         help="Evaluate binary or full nclasses",
     )
     parser.add_argument(
