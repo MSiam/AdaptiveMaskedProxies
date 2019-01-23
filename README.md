@@ -9,6 +9,10 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+## Pre-Trained Weights
+
+Download trained weights [here](https://drive.google.com/drive/folders/1wJXetJCGkT_xej8Jr8Mrj9vJUHN8EtJu?usp=sharing)
+
 ## Train on Large Scale Data
 
 ```
