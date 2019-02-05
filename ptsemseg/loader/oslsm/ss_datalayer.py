@@ -4,7 +4,6 @@ from multiprocessing import Process, Queue, Pool, Lock
 
 import sys
 import traceback
-#sys.path.insert(0, '/home/menna/WORK/pytorch-semseg/')
 from ptsemseg.loader.oslsm import util
 from ptsemseg.loader.oslsm.util import cprint, bcolors
 from operator import itemgetter

@@ -1,5 +1,5 @@
 model:
-    arch: dilated_fcn8s
+    arch: reduced_fcn8s
     lower_dim: True
     weighted_mask: False
     use_norm: False
@@ -17,7 +17,7 @@ data:
     img_cols: 500
     path: /home/Data/VOCdevkit/VOC2012/
 training:
-    train_iters: 10
+    train_iters: 15
     batch_size: 1
     val_interval: 100000000
     n_workers: 1

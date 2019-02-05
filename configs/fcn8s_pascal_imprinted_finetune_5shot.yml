@@ -10,14 +10,14 @@ data:
     dataset: pascal5i
     fold: 0
     n_classes: 16
-    k_shot: 1
+    k_shot: 5
     train_split: train_aug
     val_split: val
     img_rows: 500
     img_cols: 500
     path: /home/Data/VOCdevkit/VOC2012/
 training:
-    train_iters: 10
+    train_iters: 2
     batch_size: 1
     val_interval: 100000000
     n_workers: 1
