@@ -620,12 +620,12 @@ class PASCAL_READ_MODES:
     SEMANTIC = 2
 class PASCAL:
     def __init__(self, db_path, dataType, fold=0, binary=False):
-        if dataType == 'training':
-            dataType = 'train'
-        elif dataType == 'test':
-            dataType = 'val'
-        else:
-            raise Exception('split \'' + dataType + '\' is not valid! Valid splits: training/test')
+#        if dataType == 'training':
+#            dataType = 'train'
+#        elif dataType == 'test':
+#            dataType = 'val'
+#        else:
+#            raise Exception('split \'' + dataType + '\' is not valid! Valid splits: training/test')
 
         self.db_path = db_path
         classes = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car' , 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 'potted plant', 'sheep', 'sofa', 'train', 'tv/monitor']
@@ -872,7 +872,6 @@ class DBPascalItem(DBImageItem):
             self.ids_map = dict(zip(obj_ids, 16*np.ones(len(obj_ids))))
         else:
             self.ids_map = ids_map
-
         last_class = 0
         self.ignore_classes = range(self.fold*5+1, (self.fold+1)*5+1)
         for c in range(21):

@@ -45,14 +45,28 @@ class pascalVOC5iLoader(pascalVOCLoader):
             profile = self.convert_d(profile)
 
         profile['pascal_path'] = self.root
+        profile['sbd_path'] = self.sbd_path
+
         profile['areaRng'][1] = float('Inf')
 
         pascal_lbls = ['background', 'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus',
                        'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike',
                        'person', 'potted plant', 'sheep', 'sofa', 'train', 'tv/monitor']
-
         profile['pascal_cats'] = []
-        for i in range(fold*5+1, (fold+1)*5+1):
+        if split == "val":
+            image_sets = ["pascal_val"]
+            profile['output_type'] = 'image_pair'
+            fold_range = range(fold*5+1, (fold+1)*5+1)
+        else:
+            image_sets = ["pascal_train"]
+            profile['output_type'] = 'image_pair_train'
+            excluded_range = range(fold*5+1, (fold+1)*5+1)
+            fold_range = list(range(1,21))
+            for ex in excluded_range:
+                fold_range.remove(ex)
+
+        profile['image_sets'] = image_sets
+        for i in fold_range:
             profile['pascal_cats'].append(pascal_lbls[i])
 
         profile['k_shot'] = k_shot

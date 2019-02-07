@@ -96,6 +96,9 @@ class DBInterface():
                     elif self.params['output_type'] == 'image_pair':
                         items = pascal_db.getItems(self.params['pascal_cats'], self.params['areaRng'], read_mode = util.PASCAL_READ_MODES.SEMANTIC)
                         items = self._remove_small_objects(items)
+                    elif self.params['output_type'] == 'image_pair_train':
+                        items = pascal_db.getItems(self.params['pascal_cats'], self.params['areaRng'], read_mode = util.PASCAL_READ_MODES.SEMANTIC)
+                        items = self._remove_small_objects(items)
                     else:
                         raise Exception('Only single_image and image_pair mode are supported')
                     self.db_items.extend(items)
@@ -103,6 +106,8 @@ class DBInterface():
                     raise Exception
             cprint('Total of ' + str(len(self.db_items)) + ' db items loaded!', bcolors.OKBLUE)
 
+            if self.params['output_type'] == 'image_pair_train':
+                self.params['output_type'] = 'image_pair'
             #reads pair of images from one semantic class and and with binary labels
             if self.params['output_type'] == 'image_pair':
                 items = self.db_items
@@ -122,7 +127,6 @@ class DBInterface():
                     in_set_index = imgset.image_items.index(item)
                     self.db_items.append((imgset, in_set_index))
                 cprint('Total of ' + str(len(clusters)) + ' classes!', bcolors.OKBLUE)
-
 
         self.orig_db_items = copy.copy(self.db_items)
 

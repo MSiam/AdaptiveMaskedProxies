@@ -83,6 +83,7 @@ class pascalVOCLoader(data.Dataset):
             file_list = tuple(open(path, "r"))
             file_list = [id_.rstrip() for id_ in file_list]
             self.files[split] = file_list
+        self.sbd_path = get_data_path("sbd")
         self.setup_annotations()
         self.tf = transforms.Compose([transforms.ToTensor(),
                                       transforms.Normalize([0.485, 0.456, 0.406],
@@ -227,7 +228,6 @@ class pascalVOCLoader(data.Dataset):
         function also defines the `train_aug` and `train_aug_val` data splits
         according to the description in the class docstring
         """
-        sbd_path = get_data_path("sbd")
         if self.fold is None:
             target_path = pjoin(self.root, "SegmentationClass/pre_encoded")
         else:
@@ -235,7 +235,7 @@ class pascalVOCLoader(data.Dataset):
 
         if not os.path.exists(target_path):
             os.makedirs(target_path)
-        path = pjoin(sbd_path, "dataset/train.txt")
+        path = pjoin(self.sbd_path, "dataset/train.txt")
         sbd_train_list = tuple(open(path, "r"))
         sbd_train_list = [id_.rstrip() for id_ in sbd_train_list]
         train_aug = self.files["train"] + sbd_train_list
@@ -254,7 +254,7 @@ class pascalVOCLoader(data.Dataset):
         if len(pre_encoded) != expected:
             print("Pre-encoding segmentation masks...")
             for ii in tqdm(sbd_train_list):
-                lbl_path = pjoin(sbd_path, "dataset/cls", ii + ".mat")
+                lbl_path = pjoin(self.sbd_path, "dataset/cls", ii + ".mat")
                 data = io.loadmat(lbl_path)
                 lbl = data["GTcls"][0]["Segmentation"][0].astype(np.int32)
                 if self.fold is not None:
