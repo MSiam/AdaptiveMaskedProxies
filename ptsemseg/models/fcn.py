@@ -201,7 +201,7 @@ class fcn8s(nn.Module):
                     preds[0][0, i, j] = preds[1][0, i, j]
         return preds[0]
 
-    def extract(self, x, label):
+    def extract(self, x, label, layer=None):
         conv1 = self.conv_block1(x)
         conv2 = self.conv_block2(conv1)
         conv3 = self.conv_block3(conv2)
@@ -218,6 +218,9 @@ class fcn8s(nn.Module):
             conv3_norm = conv3
             conv4_norm = conv4
 
+        if layer == 'l0':
+            return fconv_norm, conv4_norm, conv3_norm
+
         if self.weighted_mask:
             fconv_pooled = weighted_masked_embeddings(fconv_norm.shape, label,
                                                       fconv_norm, self.n_classes)
@@ -225,15 +228,30 @@ class fcn8s(nn.Module):
                                                       conv3_norm, self.n_classes)
             conv4_pooled = weighted_masked_embeddings(conv4_norm.shape, label,
                                                       conv4_norm, self.n_classes)
+            return fconv_pooled, conv4_pooled, conv3_pooled
         else:
-            fconv_pooled = masked_embeddings(fconv_norm.shape, label, fconv_norm,
-                                             self.n_classes)
-            conv3_pooled = masked_embeddings(conv3_norm.shape, label, conv3_norm,
-                                             self.n_classes)
-            conv4_pooled = masked_embeddings(conv4_norm.shape, label, conv4_norm,
-                                             self.n_classes)
+            if layer is not None:
+                if layer == 'l1':
+                    fconv_pooled = masked_embeddings(fconv_norm.shape, label, fconv_norm,
+                                                     self.n_classes)
+                    return fconv_pooled
+                elif layer == 'l2':
+                    conv3_pooled = masked_embeddings(conv3_norm.shape, label, conv3_norm,
+                                                     self.n_classes)
+                    return conv3_pooled
+                elif layer == 'l3':
+                    conv4_pooled = masked_embeddings(conv4_norm.shape, label, conv4_norm,
+                                                     self.n_classes)
+                    return conv4_pooled
 
-        return fconv_pooled, conv4_pooled, conv3_pooled
+            else:
+                fconv_pooled = masked_embeddings(fconv_norm.shape, label, fconv_norm,
+                                                 self.n_classes)
+                conv3_pooled = masked_embeddings(conv3_norm.shape, label, conv3_norm,
+                                                 self.n_classes)
+                conv4_pooled = masked_embeddings(conv4_norm.shape, label, conv4_norm,
+                                                 self.n_classes)
+                return fconv_pooled, conv4_pooled, conv3_pooled
 
     def imprint(self, images, labels, nchannels, alpha):
         with torch.no_grad():
