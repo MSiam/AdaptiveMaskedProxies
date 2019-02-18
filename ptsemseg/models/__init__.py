@@ -6,6 +6,7 @@ from ptsemseg.models.vgg_osvos import *
 from ptsemseg.models.dilated_fcn import *
 from ptsemseg.models.dilated_fcn_highskip import *
 from ptsemseg.models.reduced_fcn import *
+from ptsemseg.models.mobilenet import *
 
 def get_model(model_dict, n_classes, version=None):
     name = model_dict['arch']
@@ -23,7 +24,7 @@ def get_model(model_dict, n_classes, version=None):
         vgg16 = models.vgg16(pretrained=True)
         model.init_vgg16_params(vgg16)
 
-    elif name == "osvos":
+    else:
         model = model(n_classes=n_classes, **param_dict)
 
     return model
@@ -37,6 +38,7 @@ def _get_model_instance(name):
             "reduced_fcn8s": reduced_fcn8s,
             "dilated_fcn8s_highskip": dilated_fcn8s_highskip,
             "osvos": OSVOS,
+            "lrefinenet": MBv2,
         }[name]
     except:
         raise("Model {} not available".format(name))
