@@ -6,7 +6,7 @@ from ptsemseg.models.vgg_osvos import *
 from ptsemseg.models.dilated_fcn import *
 from ptsemseg.models.dilated_fcn_highskip import *
 from ptsemseg.models.reduced_fcn import *
-from ptsemseg.models.mobilenet import *
+from ptsemseg.models.light_resnet import *
 
 def get_model(model_dict, n_classes, version=None):
     name = model_dict['arch']
@@ -24,6 +24,12 @@ def get_model(model_dict, n_classes, version=None):
         vgg16 = models.vgg16(pretrained=True)
         model.init_vgg16_params(vgg16)
 
+    elif name == "lrefinenet":
+        model = model(Bottleneck, [3, 4, 23, 3], n_classes=n_classes, **param_dict)
+        key = '101_imagenet'
+        url = models_urls[key]
+        model.load_state_dict(maybe_download(key, url), strict=False)
+
     else:
         model = model(n_classes=n_classes, **param_dict)
 
@@ -38,7 +44,7 @@ def _get_model_instance(name):
             "reduced_fcn8s": reduced_fcn8s,
             "dilated_fcn8s_highskip": dilated_fcn8s_highskip,
             "osvos": OSVOS,
-            "lrefinenet": MBv2,
+            "lrefinenet": ResNetLW,
         }[name]
     except:
         raise("Model {} not available".format(name))
