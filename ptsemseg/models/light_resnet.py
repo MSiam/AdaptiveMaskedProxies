@@ -33,7 +33,7 @@ import torch
 
 import numpy as np
 
-from ptsemseg.models.helpers import maybe_download
+from ptsemseg.models.utils import maybe_download
 from ptsemseg.models.layer_factory import conv1x1, conv3x3, CRPBlock
 
 data_info = {
