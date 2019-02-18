@@ -195,6 +195,7 @@ class ResNetLW(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        x_shape = x.size()
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -237,6 +238,9 @@ class ResNetLW(nn.Module):
         x1 = self.mflow_conv_g4_pool(x1)
 
         out = self.clf_conv(x1)
+
+        if self.training:
+            out = F.upsample(out, x_shape[2:])
         return out
 
 
