@@ -30,6 +30,14 @@ from ptsemseg.models.utils import masked_embeddings
 
 torch.backends.cudnn.benchmark = True
 
+def get_positive_sample(label, auxloader):
+    main_class = torch.mode(label[label!=0])[0].cpu()
+    while True:
+        sprt_img, sprt_label, qry_img, qry_label, _, _ = next(iter(auxloader))
+        if len(sprt_label[0][sprt_label[0].cpu()==main_class]) == 0:
+            break
+    return sprt_img, sprt_label, qry_img, qry_label
+
 def pairwise_distance(a, squared=False):
     """Computes the pairwise distance matrix with numerical stability."""
     pairwise_distances_squared = torch.add(
@@ -73,25 +81,24 @@ def pairwise_distance(a, squared=False):
 def compute_snnl(sprt_img, sprt_label, qry_img, qry_label,
                  train_img, train_label, model):
 
-    for c in range(model.n_classes):
-        feats_pos = model.extract(sprt_img, sprt_label[0], layer='l0')
-        feats = model.extract(qry_img, qry_label[0], layer='l0')
-        feats_neg = model.extract(train_img, train_label[0], layer='l0')
+    feats_pos = model.extract(sprt_img, sprt_label[0], layer='l0')
+    feats = model.extract(qry_img, qry_label[0], layer='l0')
+    feats_neg = model.extract(train_img, train_label[0], layer='l0')
 
-        total_loss = 0
-        for i in range(3):
-            pos = F.normalize(feats_pos[i].view(-1), p=2, dim=-1)
-            anchor = F.normalize(feats[i].view(-1), p=2, dim=-1)
-            pos_d = -1 * pairwise_distance(torch.cat([anchor.view(1, -1), pos.view(1, -1)]),
-                                           squared=True)
-            pos_d = pos_d[0, 1]
-            neg = F.normalize(feats_neg[i].view(-1), p=2, dim=-1)
-            neg_d = -1 * pairwise_distance(torch.cat([anchor.view(1, -1),  neg.view(1, -1)]),
-                                           squared=True)
-            neg_d = neg_d[0, 1]
-            total_loss += -1 * torch.sum(F.log_softmax(torch.cat([pos_d.view(1, -1),
-                                                                  neg_d.view(1, -1)]), 0), 0)
-        return total_loss.mean()
+    total_loss = 0
+    for i in range(3):
+        pos = F.normalize(feats_pos[i].view(-1), p=2, dim=-1)
+        anchor = F.normalize(feats[i].view(-1), p=2, dim=-1)
+        pos_d = -1 * pairwise_distance(torch.cat([anchor.view(1, -1), pos.view(1, -1)]),
+                                       squared=True)
+        pos_d = pos_d[0, 1]
+        neg = F.normalize(feats_neg[i].view(-1), p=2, dim=-1)
+        neg_d = -1 * pairwise_distance(torch.cat([anchor.view(1, -1),  neg.view(1, -1)]),
+                                       squared=True)
+        neg_d = neg_d[0, 1]
+        total_loss += -1 * torch.sum(F.log_softmax(torch.cat([pos_d.view(1, -1),
+                                                              neg_d.view(1, -1)]), 0), 0)
+    return total_loss.mean()
 
 def train(cfg, writer, logger):
 
@@ -237,7 +244,7 @@ def train(cfg, writer, logger):
             if (i + 1) % cfg['training']['aux_interval'] == 0:
 
                 # Sample from auxiliary loader
-                sprt_img, sprt_label, qry_img, qry_label, _, _ = next(iter(auxloader))
+                sprt_img, sprt_label, qry_img, qry_label = get_positive_sample(labels, auxloader)
                 sprt_img = sprt_img[0].cuda()
                 sprt_label = sprt_label[0].cuda()
 
@@ -249,6 +256,8 @@ def train(cfg, writer, logger):
                                          labels, model_original)
 
                 # backpropagate SNN loss
+                snnl_loss.backward()
+                optimizer.step()
 
             if (i + 1) % cfg['training']['print_interval'] == 0:
                 fmt_str = "Iter [{:d}/{:d}]  Loss: {:.4f}  Time/Image: {:.4f}"
