@@ -26,8 +26,26 @@ from ptsemseg.optimizers import get_optimizer
 from ptsemseg.utils import convert_state_dict, load_my_state_dict
 
 from tensorboardX import SummaryWriter
+from ptsemseg.models.utils import masked_embeddings
 
 torch.backends.cudnn.benchmark = True
+
+def compute_proxy(img, label, model, current_class):
+    vearly_embeddings, early_embeddings, embeddings_= model.extract(img, label)
+    # Compute Proxies
+    #masked_embeddings(embeddings)
+    # return
+
+def compute_snnl(sprt_img, sprt_label, qry_img, qry_label,
+                 train_image, train_label, model):
+    for c in range(model.nclasses):
+        proxy_pos = compute_proxy(sprt_img, sprt_label, model)
+        proxy = compute_proxy(qry_img, qry_label, model)
+        pos_exp = np.exp( -1 * l2_norm_squared(proxy-proxy_pos))
+        proxy_neg = compute_proxy(train_img, train_label, model)
+        neg_exp = np.exp( -1 * l2_norm_squared(proxy-proxy_neg))
+        return -1 * np.log(pos_exp / neg_exp)
+
 def train(cfg, writer, logger):
 
     # Setup seeds
@@ -50,6 +68,16 @@ def train(cfg, writer, logger):
     if not 'fold' in cfg['data'].keys():
         cfg['data']['fold'] = None
 
+    aux_data_loader = get_loader('pascal5i')
+    aux_loader = data_loader(
+        data_path,
+        is_transform=True,
+        split=cfg['data']['train_split'],
+        img_size=(cfg['data']['img_rows'], cfg['data']['img_cols']),
+        augmentations=data_aug,
+        fold=cfg['data']['fold'],
+        n_classes=cfg['data']['n_classes'])
+
     t_loader = data_loader(
         data_path,
         is_transform=True,
@@ -59,8 +87,7 @@ def train(cfg, writer, logger):
         fold=cfg['data']['fold'],
         n_classes=cfg['data']['n_classes'])
 
-    vdata_loader = get_loader('pascal')
-    v_loader = vdata_loader(
+    v_loader = data_loader(
         data_path,
         is_transform=True,
         split=cfg['data']['val_split'],
@@ -69,6 +96,12 @@ def train(cfg, writer, logger):
         n_classes=cfg['data']['n_classes'])
 
     n_classes = t_loader.n_classes
+
+    auxloader = data.DataLoader(aux_loader,
+                                  batch_size=cfg['training']['batch_size'],
+                                  num_workers=cfg['training']['n_workers'],
+                                  shuffle=True)
+
     trainloader = data.DataLoader(t_loader,
                                   batch_size=cfg['training']['batch_size'],
                                   num_workers=cfg['training']['n_workers'],
@@ -86,12 +119,7 @@ def train(cfg, writer, logger):
     model = get_model(cfg['model'], n_classes).to(device)
     if args.model_path != "fcn8s_pascal_1_26.pkl": # Default Value
         state = convert_state_dict(torch.load(args.model_path)["model_state"])
-        if cfg['model']['use_scale']:
-            model = load_my_state_dict(model, state)
-            model.freeze_weights_extractor()
-        else:
-            model.load_state_dict(state)
-            model.freeze_weights_extractor()
+        model.load_state_dict(state)
 
     model = torch.nn.DataParallel(model, device_ids=range(torch.cuda.device_count()))
 
@@ -136,11 +164,10 @@ def train(cfg, writer, logger):
     flag = True
 
     while i <= cfg['training']['train_iters'] and flag:
-        for i, (sprt_images, sprt_labels, qry_images, qry_labels,
-            original_sprt_images, original_qry_images) in enumerate(trainloader):
+        for i, (images, labels) in enumerate(trainloader):
             import matplotlib.pyplot as plt
-            plt.figure(1);plt.imshow(np.transpose(sprt_images[0][0], (1,2,0)));
-            plt.figure(2); plt.imshow(sprt_labels[0][0]); plt.show()
+            plt.figure(1);plt.imshow(np.transpose(images[0], (1,2,0)));
+            plt.figure(2); plt.imshow(labels[0]); plt.show()
 
             i += 1
             start_ts = time.time()
@@ -157,6 +184,17 @@ def train(cfg, writer, logger):
             optimizer.step()
 
             time_meter.update(time.time() - start_ts)
+
+            if (i + 1) % cfg['training']['aux_interval'] == 0:
+                import pdb; pdb.set_trace()
+
+                # Sample from auxiliary loader
+                sprt_img, sprt_label, qry_img, qry_label, _, _ = next(iter(aux_loader))
+
+                # Compute SNNL accordingly
+                snnl_loss = compute_snnl(sprt_img, sprt_label, qry_img, qry_label, images, labels, model)
+
+                # backpropagate SNN loss
 
             if (i + 1) % cfg['training']['print_interval'] == 0:
                 fmt_str = "Iter [{:d}/{:d}]  Loss: {:.4f}  Time/Image: {:.4f}"
