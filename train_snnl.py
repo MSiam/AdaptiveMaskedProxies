@@ -90,7 +90,7 @@ def compute_snnl(sprt_img, sprt_label, qry_img, qry_label,
                                            squared=True)
             neg_d = neg_d[0, 1]
             total_loss += -1 * torch.sum(F.log_softmax(torch.cat([pos_d.view(1, -1),
-                                                                  neg_d.view(1, -1)]), -1), -1)
+                                                                  neg_d.view(1, -1)]), 0), 0)
         return total_loss.mean()
 
 def train(cfg, writer, logger):
