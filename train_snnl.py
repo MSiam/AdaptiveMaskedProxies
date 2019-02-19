@@ -32,10 +32,14 @@ torch.backends.cudnn.benchmark = True
 
 def get_positive_sample(label, auxloader):
     main_class = torch.mode(label[label!=0])[0].cpu()
-    while True:
+    count = 0
+    while count<10:
         sprt_img, sprt_label, qry_img, qry_label, _, _ = next(iter(auxloader))
-        if len(sprt_label[0][sprt_label[0].cpu()==main_class]) == 0:
+        if torch.mode(sprt_label[0][sprt_label[0]!=0])[0].cpu() != main_class:
             break
+        count+= 1
+    if count == 10:
+        return None, None, None, None
     return sprt_img, sprt_label, qry_img, qry_label
 
 def pairwise_distance(a, squared=False):
@@ -245,6 +249,8 @@ def train(cfg, writer, logger):
 
                 # Sample from auxiliary loader
                 sprt_img, sprt_label, qry_img, qry_label = get_positive_sample(labels, auxloader)
+                if sprt_img is None:
+                    continue
                 sprt_img = sprt_img[0].cuda()
                 sprt_label = sprt_label[0].cuda()
 
