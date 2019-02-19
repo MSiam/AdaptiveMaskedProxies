@@ -239,7 +239,7 @@ class ResNetLW(nn.Module):
 
         out = self.clf_conv(x1)
 
-        if self.training:
+        if not self.training:
             out = F.upsample(out, x_shape[2:])
         return out
 
