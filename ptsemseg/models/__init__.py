@@ -25,8 +25,8 @@ def get_model(model_dict, n_classes, version=None):
         model.init_vgg16_params(vgg16)
 
     elif name == "lrefinenet":
-        model = model(Bottleneck, [3, 8, 36, 3], n_classes=n_classes, **param_dict)
-        key = '152_imagenet'
+        model = model(Bottleneck, [3, 4, 6, 3], n_classes=n_classes, **param_dict)
+        key = '50_imagenet'
         url = models_urls[key]
         model.load_state_dict(maybe_download(key, url), strict=False)
 

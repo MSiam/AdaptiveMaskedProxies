@@ -51,7 +51,7 @@ def validate(cfg, args):
     # Setup Model
 
     model = get_model(cfg['model'], n_classes).to(device)
-    state = convert_state_dict(torch.load(args.model_path)["model_state"])
+    state = convert_state_dict(torch.load(args.model_path)["segmenter"])
     model.load_state_dict(state)
     model.eval()
     model.to(device)
@@ -60,16 +60,7 @@ def validate(cfg, args):
         start_time = timeit.default_timer()
 
         images = images.to(device)
-        done = False
-        while not done:
-            try:
-                outputs = model(images)
-                done = True
-                break
-            except:
-                print('Caught an exception with image ', i)
-                torch.cuda.empty_cache()
-
+        outputs = model(images)
         pred = outputs.data.max(1)[1].cpu().numpy()
 
         gt = labels.numpy()
