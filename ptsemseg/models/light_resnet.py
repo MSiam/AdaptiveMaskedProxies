@@ -35,6 +35,11 @@ import numpy as np
 
 from ptsemseg.models.utils import maybe_download
 from ptsemseg.models.layer_factory import conv1x1, conv3x3, CRPBlock
+from ptsemseg.models.utils import freeze_weights, \
+                                  masked_embeddings, \
+                                  compute_weight
+
+import copy
 
 data_info = {
     7 : 'Person',
@@ -170,8 +175,9 @@ class ResNetLW(nn.Module):
         self.adapt_stage4_b2_joint_varout_dimred = conv1x1(256, 256, bias=False)
         self.mflow_conv_g4_pool = self._make_crp(256, 256, 4)
 
-        self.clf_conv = nn.Conv2d(256, n_classes, kernel_size=3, stride=1,
+        self.clf_conv = nn.Conv2d(256, n_classes, kernel_size=1, stride=1,
                                   padding=1, bias=True)
+        self.n_classes = n_classes
 
     def _make_crp(self, in_planes, out_planes, stages):
         layers = [CRPBlock(in_planes, out_planes,stages)]
@@ -242,6 +248,86 @@ class ResNetLW(nn.Module):
         if not self.training:
             out = F.upsample(out, x_shape[2:])
         return out
+
+    def extract(self, x, label, layer=None):
+        x_shape = x.size()
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+
+        l1 = self.layer1(x)
+        l2 = self.layer2(l1)
+        l3 = self.layer3(l2)
+        l4 = self.layer4(l3)
+
+        l4 = self.do(l4)
+        l3 = self.do(l3)
+
+        x4 = self.p_ims1d2_outl1_dimred(l4)
+        x4 = self.relu(x4)
+        x4 = self.mflow_conv_g1_pool(x4)
+        x4 = self.mflow_conv_g1_b3_joint_varout_dimred(x4)
+        x4 = nn.Upsample(size=l3.size()[2:], mode='bilinear', align_corners=True)(x4)
+
+        x3 = self.p_ims1d2_outl2_dimred(l3)
+        x3 = self.adapt_stage2_b2_joint_varout_dimred(x3)
+        x3 = x3 + x4
+        x3 = F.relu(x3)
+        x3 = self.mflow_conv_g2_pool(x3)
+        x3 = self.mflow_conv_g2_b3_joint_varout_dimred(x3)
+        x3 = nn.Upsample(size=l2.size()[2:], mode='bilinear', align_corners=True)(x3)
+
+        x2 = self.p_ims1d2_outl3_dimred(l2)
+        x2 = self.adapt_stage3_b2_joint_varout_dimred(x2)
+        x2 = x2 + x3
+        x2 = F.relu(x2)
+        x2 = self.mflow_conv_g3_pool(x2)
+        x2 = self.mflow_conv_g3_b3_joint_varout_dimred(x2)
+        x2 = nn.Upsample(size=l1.size()[2:], mode='bilinear', align_corners=True)(x2)
+
+        x1 = self.p_ims1d2_outl4_dimred(l1)
+        x1 = self.adapt_stage4_b2_joint_varout_dimred(x1)
+        x1 = x1 + x2
+        x1 = F.relu(x1)
+        x1 = self.mflow_conv_g4_pool(x1)
+
+        x_pooled = masked_embeddings(x1.shape, label, x1, self.n_classes)
+        return x_pooled
+
+    def imprint(self, images, labels, nchannels, alpha):
+        with torch.no_grad():
+            embeddings = None
+            for ii, ll in zip(images, labels):
+                #ii = ii.unsqueeze(0)
+                ll = ll[0]
+                if embeddings is None:
+                    embeddings = self.extract(ii, ll)
+                else:
+                    embeddings_ = self.extract(ii, ll)
+                    embeddings = torch.cat((embeddings, embeddings_), 0)
+
+            # Imprint weights for last score layer
+            nclasses = self.n_classes
+            self.n_classes = 17
+
+            weight = compute_weight(embeddings, nclasses, labels,
+                                    self.clf_conv.weight.data, alpha=alpha)
+            self.clf_conv = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
+            self.clf_conv.weight.data = weight
+
+            assert self.clf_conv.weight.is_cuda
+            assert self.classifier[2].weight.data.shape[1] == 256
+
+    def save_original_weights(self):
+        self.original_weights = []
+        self.original_weights.append(copy.deepcopy(self.clf_conv.weight.data))
+
+    def reverse_imprinting(self, nchannels, cl=False):
+        self.n_classes = 16
+        self.clf_conv = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
+        self.clf_conv.weight.data = copy.deepcopy(self.original_weights[0])
+        assert self.clf_conv.weight.data.shape[1] == 256
 
 
 def rf_lw50(n_classes, imagenet=False, pretrained=True, **kwargs):

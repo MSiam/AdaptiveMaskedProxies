@@ -112,7 +112,7 @@ def validate(cfg, args):
 
     # Setup Model
     model = get_model(cfg['model'], n_classes).to(device)
-    state = convert_state_dict(torch.load(args.model_path)["model_state"])
+    state = convert_state_dict(torch.load(args.model_path)["segmenter"])
     model.load_state_dict(state)
     model.to(device)
 
