@@ -295,7 +295,7 @@ class ResNetLW(nn.Module):
         x_pooled = masked_embeddings(x1.shape, label, x1, self.n_classes)
         return x_pooled
 
-    def imprint(self, images, labels, nchannels, alpha):
+    def imprint(self, images, labels, alpha):
         with torch.no_grad():
             embeddings = None
             for ii, ll in zip(images, labels):
@@ -310,6 +310,7 @@ class ResNetLW(nn.Module):
             # Imprint weights for last score layer
             nclasses = self.n_classes
             self.n_classes = 17
+            nchannels = embeddings.shape[2]
 
             weight = compute_weight(embeddings, nclasses, labels,
                                     self.clf_conv.weight.data, alpha=alpha)
@@ -317,14 +318,15 @@ class ResNetLW(nn.Module):
             self.clf_conv.weight.data = weight
 
             assert self.clf_conv.weight.is_cuda
-            assert self.classifier[2].weight.data.shape[1] == 256
+            assert self.clf_conv.weight.data.shape[1] == 256
 
     def save_original_weights(self):
         self.original_weights = []
         self.original_weights.append(copy.deepcopy(self.clf_conv.weight.data))
 
-    def reverse_imprinting(self, nchannels, cl=False):
+    def reverse_imprinting(self, cl=False):
         self.n_classes = 16
+        nchannels = self.clf_conv.weight.data.shape[1]
         self.clf_conv = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
         self.clf_conv.weight.data = copy.deepcopy(self.original_weights[0])
         assert self.clf_conv.weight.data.shape[1] == 256
