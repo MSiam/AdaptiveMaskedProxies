@@ -176,13 +176,13 @@ class ResNetLW(nn.Module):
         self.mflow_conv_g4_pool = self._make_crp(256, 256, 4)
 
         self.clf_conv = nn.Conv2d(256, n_classes, kernel_size=1, stride=1,
-                                  padding=1, bias=True)
+                                  padding=1, bias=False)
         self.clf_l4_conv = nn.Conv2d(256, n_classes, kernel_size=1, stride=1,
-                                  padding=1, bias=True)
+                                  padding=1, bias=False)
         self.clf_l3_conv = nn.Conv2d(256, n_classes, kernel_size=1, stride=1,
-                                  padding=1, bias=True)
+                                  padding=1, bias=False)
         self.clf_l2_conv = nn.Conv2d(256, n_classes, kernel_size=1, stride=1,
-                                  padding=1, bias=True)
+                                  padding=1, bias=False)
         self.n_classes = n_classes
 
     def _make_crp(self, in_planes, out_planes, stages):
