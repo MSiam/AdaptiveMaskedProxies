@@ -15,7 +15,7 @@ data:
     val_split: val
     img_rows: 500
     img_cols: 500
-    path: /home/Data/VOCdevkit/VOC2012/
+    path: /home/menna/Datasets/VOCdevkit/VOC2012/
 training:
     train_iters: 15
     batch_size: 1
@@ -31,3 +31,17 @@ training:
         size_average: False
     lr_schedule:
     resume: fcn8s_pascal_best_model.pkl
+    augmentations:
+        hflip: 0.5                                     #[flip horizontally with chance p]
+        vflip: 0.5                                     #[flip vertically with chance p]
+#        ccrop: [300, 300]                                 #[center crop of (h,w)]
+#        scale: [500, 500]                                 #[scale to size (h,w)]
+#        gamma: x                                     #[gamma varied in 1 to 1+x]
+#        hue: x                                       #[hue varied in -x to x]
+#        brightness: x                                #[brightness varied in 1-x to 1+x]
+#        saturation: x                                #[saturation varied in 1-x to 1+x]
+#        contrast: x                                  #[contrast varied in 1-x to 1+x]
+#        rcrop: [300, 300]                                #[crop of size (h,w)]
+#        translate: [dh, dw]                          #[reflective translation by (dh, dw)]
+#        rotate: d                                    #[rotate -d to d degrees]
+

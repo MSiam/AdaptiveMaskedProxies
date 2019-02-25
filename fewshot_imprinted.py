@@ -25,6 +25,7 @@ from PIL import Image
 from sklearn.preprocessing import MinMaxScaler
 import cv2
 import torch.nn.functional as F
+from ptsemseg.augmentations import get_composed_augmentations
 
 #torch.backends.cudnn.benchmark = True
 def save_images(sprt_image, sprt_label, qry_image, iteration, out_dir):
@@ -79,6 +80,10 @@ def validate(cfg, args):
     data_loader = get_loader(cfg['data']['dataset'])
     data_path = cfg['data']['path']
 
+    augmentations = cfg['training'].get('augmentations', None)
+    data_aug = get_composed_augmentations(augmentations)
+
+
     loader = data_loader(
         data_path,
         split=cfg['data']['val_split'],
@@ -86,6 +91,7 @@ def validate(cfg, args):
         img_size=(cfg['data']['img_rows'],
                   cfg['data']['img_cols']),
         n_classes=cfg['data']['n_classes'],
+        augmentations=data_aug,
         fold=cfg['data']['fold'],
         binary=args.binary,
         k_shot=cfg['data']['k_shot']
@@ -123,6 +129,10 @@ def validate(cfg, args):
     alpha = 0.5
     for i, (sprt_images, sprt_labels, qry_images, qry_labels,
             original_sprt_images, original_qry_images) in enumerate(valloader):
+
+#        import pdb; pdb.set_trace()
+#        import matplotlib.pyplot as plt
+
         print('Starting iteration ', i)
         start_time = timeit.default_timer()
         if args.out_dir != "":
@@ -133,7 +143,6 @@ def validate(cfg, args):
             sprt_images[si] = sprt_images[si].to(device)
             sprt_labels[si] = sprt_labels[si].to(device)
         qry_images = qry_images.to(device)
-
         # 1- Extract embedding and add the imprinted weights
         model.imprint(sprt_images, sprt_labels, nchannels, alpha=alpha)
 

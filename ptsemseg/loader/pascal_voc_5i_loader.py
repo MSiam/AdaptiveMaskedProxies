@@ -91,6 +91,10 @@ class pascalVOC5iLoader(pascalVOCLoader):
         lbl2 = np.asarray(self.out['second_label'][0], dtype=np.int32)
         im2, lbl2 = self.transform(im2, lbl2)
 
+        if self.augmentations is not None:
+            im1_aug = []
+            lbl1_aug = []
+
         for j in range(len(self.out['first_img'])):
 
             img = cv2.resize(self.out['first_img'][j], self.img_size)
@@ -98,8 +102,37 @@ class pascalVOC5iLoader(pascalVOCLoader):
             im1.append(np.asarray(self.out['first_img'][j], dtype=np.float32))
             lbl1.append(np.asarray(self.out['first_label'][j], dtype=np.int32))
 
+            # In case there are augmentations used, gen. 4 randomly generated augmentations and add to support set
+            if self.augmentations is not None:
+                for aug_i in range(2):
+                    im_aug = Image.fromarray(self.out['first_img'][j])
+                    lbl_aug = Image.fromarray(self.out['first_label'][j], mode='I')
+
+                    im_aug, lbl_aug = self.augmentations(im_aug, lbl_aug)
+
+                    im_aug = np.array(im_aug); lbl_aug = np.array(lbl_aug.convert('P'))
+                    lbl_aug[lbl_aug == 255] = 16
+
+                    if len(self.out['first_label'][j][self.out['first_label'][j]==250]) != 0:
+                        import matplotlib.pyplot as plt
+                        plt.figure(1);plt.imshow(self.out['first_label'][j]);
+                        plt.figure(2);plt.imshow(im1[j]);
+                        plt.figure(3);plt.imshow(im1_aug[j]);
+                        plt.figure(4);plt.imshow(lbl1_aug[j]);plt.show()
+
+                    im1_aug.append(np.asarray(im_aug, dtype=np.float32))
+                    lbl1_aug.append(np.asarray(lbl_aug, dtype=np.int32))
+
             if self.is_transform:
                 im1[j], lbl1[j] = self.transform(im1[j], lbl1[j])
+
+                if self.augmentations is not None:
+                    for aug_i in range(j*2, len(im1_aug)):
+                        im1_aug[aug_i], lbl1_aug[aug_i] = self.transform(im1_aug[aug_i],
+                                                                         lbl1_aug[aug_i])
+        if self.augmentations is not None:
+            im1 += im1_aug
+            lbl1 += lbl1_aug
 
         return im1, lbl1, im2, lbl2, original_im1, original_im2
 
