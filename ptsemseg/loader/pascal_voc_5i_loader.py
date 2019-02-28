@@ -91,7 +91,7 @@ class pascalVOC5iLoader(pascalVOCLoader):
 
     def __len__(self):
         if self.split == 'val':
-            return 1000
+            return 200 #1000
         else:
             return len(self.PLP.db_interface.db_items)
 

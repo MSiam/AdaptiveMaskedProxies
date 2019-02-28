@@ -915,5 +915,5 @@ class DBPascalItem(DBImageItem):
         return m
 
     def read_img(self):
-        print(self.img_path)
+        #print(self.img_path)
         return np.array(Image.open(self.img_path))
