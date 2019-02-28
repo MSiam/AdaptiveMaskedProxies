@@ -235,7 +235,7 @@ class fcn8s(nn.Module):
 
         return fconv_pooled, conv4_pooled, conv3_pooled
 
-    def imprint(self, images, labels, nchannels, alpha):
+    def imprint(self, images, labels, alpha):
         with torch.no_grad():
             embeddings = None
             for ii, ll in zip(images, labels):
@@ -255,6 +255,7 @@ class fcn8s(nn.Module):
             # Imprint weights for last score layer
             nclasses = self.n_classes
             self.n_classes = 17
+            nchannels = embeddings.shape[2]
 
             weight = compute_weight(embeddings, nclasses, labels,
                                          self.classifier[2].weight.data, alpha=alpha)
@@ -285,7 +286,8 @@ class fcn8s(nn.Module):
         self.original_weights.append(copy.deepcopy(self.score_pool3.weight.data))
 
 
-    def reverse_imprinting(self, nchannels, cl=False):
+    def reverse_imprinting(self, cl=False):
+        nchannels = self.classifier[2].weight.data.shape[1]
         if cl:
             print('reverse with enabled continual learning')
             self.n_classes = 16
