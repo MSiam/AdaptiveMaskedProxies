@@ -63,14 +63,6 @@ def validate(cfg, args, cfg_hp, rprtr):
         hparam_search= True
     )
 
-    if 'fcn8s' in cfg['model']['arch']:
-        if cfg['model']['lower_dim']:
-            nchannels = 256
-        else:
-            nchannels = 4096
-    else:
-        nchannels = 64
-
     n_classes = loader.n_classes
 
     valloader = data.DataLoader(loader,
@@ -103,7 +95,7 @@ def validate(cfg, args, cfg_hp, rprtr):
         qry_images = qry_images.to(device)
 
         # 1- Extract embedding and add the imprinted weights
-        model.imprint(sprt_images, sprt_labels, nchannels, alpha=alpha)
+        model.imprint(sprt_images, sprt_labels, alpha=alpha)
 
         # 2- Infer on the query image
         model.eval()
@@ -112,7 +104,7 @@ def validate(cfg, args, cfg_hp, rprtr):
             pred = outputs.data.max(1)[1].cpu().numpy()
 
         # Reverse the last imprinting (Few shot setting only not Continual Learning setup yet)
-        model.reverse_imprinting(nchannels, args.cl)
+        model.reverse_imprinting(args.cl)
 
         gt = qry_labels.numpy()
         if args.binary:
@@ -153,11 +145,8 @@ def start_hyperopt(args, cfg):
         max_t=400,
         grace_period=20)
 
-    # Define Configuration for hyperparam search
 
     # Start trials
-
-    # Get best model and save hyperparams
     tune.register_trainable("validate",
                             lambda cfg_hp, rprtr: validate(cfg, args, cfg_hp, rprtr))
 

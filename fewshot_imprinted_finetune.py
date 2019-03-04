@@ -94,11 +94,6 @@ def validate(cfg, args):
         k_shot=cfg['data']['k_shot']
     )
 
-    if cfg['model']['lower_dim']:
-        nchannels = 256
-    else:
-        nchannels = 4096
-
     n_classes = loader.n_classes
 
     valloader = data.DataLoader(loader,
@@ -140,7 +135,7 @@ def validate(cfg, args):
         qry_images = qry_images.to(device)
 
         # 1- Extract embedding and add the imprinted weights
-        model.imprint(sprt_images, sprt_labels, nchannels, alpha=alpha)
+        model.imprint(sprt_images, sprt_labels, alpha=alpha)
 
         optimizer = optimizer_cls(model.parameters(), **optimizer_params)
         scheduler = get_scheduler(optimizer, cfg['training']['lr_schedule'])
@@ -172,7 +167,7 @@ def validate(cfg, args):
             pred = outputs.data.max(1)[1].cpu().numpy()
 
         # Reverse the last imprinting (Few shot setting only not Continual Learning setup yet)
-        model.reverse_imprinting(nchannels, args.cl)
+        model.reverse_imprinting(args.cl)
 
         gt = qry_labels.numpy()
         if args.binary:
