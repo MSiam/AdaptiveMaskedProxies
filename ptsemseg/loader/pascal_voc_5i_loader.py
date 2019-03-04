@@ -54,9 +54,14 @@ class pascalVOC5iLoader(pascalVOCLoader):
                        'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike',
                        'person', 'potted plant', 'sheep', 'sofa', 'train', 'tv/monitor']
         profile['pascal_cats'] = []
+
         if split == "val":
             image_sets = ["pascal_val"]
             profile['output_type'] = 'image_pair'
+            if hparam_search:
+                mapped_folds = {0: 1, 1: 0, 2: 3, 3: 2}
+                fold = mapped_folds[fold]
+
             fold_range = range(fold*5+1, (fold+1)*5+1)
         else:
             image_sets = ["pascal_train"]
