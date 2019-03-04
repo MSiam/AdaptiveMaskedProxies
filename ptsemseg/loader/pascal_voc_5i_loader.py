@@ -33,14 +33,15 @@ class pascalVOC5iLoader(pascalVOCLoader):
         n_classes=15,
         fold=0,
         binary=False,
-        k_shot=1
+        k_shot=1,
+        hparam_search=False
     ):
         super(pascalVOC5iLoader, self).__init__(root, split=split,
                                           is_transform=is_transform, img_size=img_size,
                                           augmentations=augmentations, img_norm=img_norm,
                                           n_classes=n_classes)
 
-        with open('ptsemseg/loader/oslsm/profile.txt', 'r') as f:
+        with open('/home/eren/Work/AdaptiveMaskedImprinting/ptsemseg/loader/oslsm/profile.txt', 'r') as f:
             profile = str(f.read())
             profile = self.convert_d(profile)
 
@@ -76,6 +77,7 @@ class pascalVOC5iLoader(pascalVOCLoader):
 
         dbi = ss_datalayer.DBInterface(profile, fold=fold, binary=binary)
         self.PLP = ss_datalayer.PairLoaderProcess(None, None, dbi, profile_copy)
+        self.hparam_search = hparam_search
 
     def convert_d(self, string):
         s = string.replace("{" ,"")
@@ -90,8 +92,10 @@ class pascalVOC5iLoader(pascalVOCLoader):
         return dictionary
 
     def __len__(self):
-        if self.split == 'val':
-            return 200 #1000
+        if self.hparam_search:
+            return 200
+        elif self.split == 'val':
+            return 1000
         else:
             return len(self.PLP.db_interface.db_items)
 
