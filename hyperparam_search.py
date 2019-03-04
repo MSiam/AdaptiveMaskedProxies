@@ -59,7 +59,8 @@ def validate(cfg, args, cfg_hp, rprtr):
         n_classes=cfg['data']['n_classes'],
         fold=cfg['data']['fold'],
         binary=args.binary,
-        k_shot=cfg['data']['k_shot']
+        k_shot=cfg['data']['k_shot'],
+        hparam_search= True
     )
 
     if 'fcn8s' in cfg['model']['arch']:
@@ -148,7 +149,7 @@ def start_hyperopt(args, cfg):
     ray.init()
     sched = AsyncHyperBandScheduler(
         time_attr="training_iteration",
-        reward_attr="neg_mean_loss",
+        reward_attr="mean_accuracy",
         max_t=400,
         grace_period=20)
 

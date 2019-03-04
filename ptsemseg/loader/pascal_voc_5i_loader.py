@@ -39,7 +39,7 @@ class pascalVOC5iLoader(pascalVOCLoader):
         super(pascalVOC5iLoader, self).__init__(root, split=split,
                                           is_transform=is_transform, img_size=img_size,
                                           augmentations=augmentations, img_norm=img_norm,
-                                          n_classes=n_classes)
+                                          n_classes=n_classes, hparam_search=hparam_search)
 
         with open('/home/eren/Work/AdaptiveMaskedImprinting/ptsemseg/loader/oslsm/profile.txt', 'r') as f:
             profile = str(f.read())
@@ -75,9 +75,8 @@ class pascalVOC5iLoader(pascalVOCLoader):
         profile_copy['first_label_params'].append(('original_first_label', 1.0, 0.0))
         profile_copy['deploy_mode'] = True
 
-        dbi = ss_datalayer.DBInterface(profile, fold=fold, binary=binary)
+        dbi = ss_datalayer.DBInterface(profile, fold=fold, binary=binary, hparam_search=hparam_search)
         self.PLP = ss_datalayer.PairLoaderProcess(None, None, dbi, profile_copy)
-        self.hparam_search = hparam_search
 
     def convert_d(self, string):
         s = string.replace("{" ,"")

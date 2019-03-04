@@ -57,7 +57,8 @@ def train(cfg, writer, logger):
         img_size=(cfg['data']['img_rows'], cfg['data']['img_cols']),
         augmentations=data_aug,
         fold=cfg['data']['fold'],
-        n_classes=cfg['data']['n_classes'])
+        n_classes=cfg['data']['n_classes'],
+        hparam_search=args.hpsearch)
 
     v_loader = data_loader(
         data_path,
@@ -65,7 +66,8 @@ def train(cfg, writer, logger):
         split=cfg['data']['val_split'],
         img_size=(cfg['data']['img_rows'], cfg['data']['img_cols']),
         fold=cfg['data']['fold'],
-        n_classes=cfg['data']['n_classes'])
+        n_classes=cfg['data']['n_classes'],
+        hparam_search=args.hpsearch)
 
     n_classes = t_loader.n_classes
     trainloader = data.DataLoader(t_loader,
@@ -237,6 +239,10 @@ if __name__ == "__main__":
         default="fcn8s_pascal_1_26.pkl",
         help="Path to the saved model",
     )
+    parser.add_argument(
+        "--hpsearch",
+        action="store_true",
+        help="flag to train for hyperparameter search")
 
     args = parser.parse_args()
 

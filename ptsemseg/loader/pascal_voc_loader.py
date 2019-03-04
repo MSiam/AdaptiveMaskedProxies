@@ -64,7 +64,8 @@ class pascalVOCLoader(data.Dataset):
         augmentations=None,
         img_norm=True,
         fold=None,
-        n_classes=21
+        n_classes=21,
+        hparam_search=False
     ):
         self.root = os.path.expanduser(root)
         self.split = split
@@ -74,6 +75,9 @@ class pascalVOCLoader(data.Dataset):
         self.n_classes = n_classes
         self.mean = np.array([104.00699, 116.66877, 122.67892])
         self.fold = fold
+        self.hparam_search = hparam_search
+        self.mapped_folds = {0: 0, 1: 0, 2: 1, 3: 1}
+
         self.files = collections.defaultdict(list)
         self.img_size = (
             img_size if isinstance(img_size, tuple) else (img_size, img_size)
@@ -96,10 +100,17 @@ class pascalVOCLoader(data.Dataset):
         im_name = self.files[self.split][index]
         im_path = pjoin(self.root, "JPEGImages", im_name + ".jpg")
 
-        if self.fold is None:
-            lbl_path = pjoin(self.root, "SegmentationClass/pre_encoded", im_name + ".png")
+        if self.hparam_search:
+            if self.fold is None:
+                lbl_path = pjoin(self.root, "SegmentationClass/pre_encoded_hpsearch", im_name + ".png")
+            else:
+                lbl_path = pjoin(self.root, "SegmentationClass/pre_encoded_hpsearch_"+str(self.fold), im_name + ".png")
+
         else:
-            lbl_path = pjoin(self.root, "SegmentationClass/pre_encoded_"+str(self.fold), im_name + ".png")
+            if self.fold is None:
+                lbl_path = pjoin(self.root, "SegmentationClass/pre_encoded", im_name + ".png")
+            else:
+                lbl_path = pjoin(self.root, "SegmentationClass/pre_encoded_"+str(self.fold), im_name + ".png")
 
         #print('getting item ', im_path,' + ' , lbl_path)
         im = Image.open(im_path)
@@ -159,7 +170,14 @@ class pascalVOCLoader(data.Dataset):
 
     def filter_seg(self, fold, label_mask):
         if self.fold is not None: # Some classes are ignored for OSLSM Training
-            ignore_classes = range(self.fold*5+1, (self.fold+1)*5+1)
+
+            if self.hparam_search:
+                # Train only on the first 10 classes and leave the other 5 for hparamsearch
+                fold =  self.mapped_folds[self.fold]
+                ignore_classes = range(fold*10+1, (fold+1)*10+1)
+            else:
+                ignore_classes = range(self.fold*5+1, (self.fold+1)*5+1)
+
             class_count = 0
             for c in range(21):
                 if c in ignore_classes:
@@ -228,10 +246,16 @@ class pascalVOCLoader(data.Dataset):
         function also defines the `train_aug` and `train_aug_val` data splits
         according to the description in the class docstring
         """
-        if self.fold is None:
-            target_path = pjoin(self.root, "SegmentationClass/pre_encoded")
+        if self.hparam_search:
+            if self.fold is None:
+                target_path = pjoin(self.root, "SegmentationClass/pre_encoded_hpsearch")
+            else:
+                target_path = pjoin(self.root, "SegmentationClass/pre_encoded_hpsearch_"+str(self.fold))
         else:
-            target_path = pjoin(self.root, "SegmentationClass/pre_encoded_"+str(self.fold))
+            if self.fold is None:
+                target_path = pjoin(self.root, "SegmentationClass/pre_encoded")
+            else:
+                target_path = pjoin(self.root, "SegmentationClass/pre_encoded_"+str(self.fold))
 
         if not os.path.exists(target_path):
             os.makedirs(target_path)

@@ -18,8 +18,9 @@ import multiprocessing.pool
 from skimage.io import imsave
 
 class DBInterface():
-    def __init__(self, params, fold=0, binary=False):
+    def __init__(self, params, fold=0, binary=False, hparam_search=False):
         self.fold = fold
+        self.hparam_search = hparam_search
         self.binary = binary
         self.lock = Lock()
         self.params = params
@@ -85,9 +86,11 @@ class DBInterface():
             for image_set in self.params['image_sets']:
                 if image_set.startswith('pascal') or image_set.startswith('sbd'):
                     if image_set.startswith('pascal'):
-                        pascal_db = util.PASCAL(self.params['pascal_path'], image_set[7:], fold=self.fold, binary=self.binary)
+                        pascal_db = util.PASCAL(self.params['pascal_path'], image_set[7:], fold=self.fold, binary=self.binary,
+                                                hparam_search=self.hparam_search)
                     elif image_set.startswith('sbd'):
-                        pascal_db = util.PASCAL(self.params['sbd_path'], image_set[4:], fold=self.fold, binary=self.binary)
+                        pascal_db = util.PASCAL(self.params['sbd_path'], image_set[4:], fold=self.fold, binary=self.binary,
+                                                hparam_search=self.hparam_search)
                     #reads single image and all semantic classes are presented in the label
 
                     if self.params['output_type'] == 'single_image':

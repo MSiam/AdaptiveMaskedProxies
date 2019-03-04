@@ -619,7 +619,7 @@ class PASCAL_READ_MODES:
     #Returns list of DBImageSetItem each has set of images and corresponding masks for each semantic label
     SEMANTIC = 2
 class PASCAL:
-    def __init__(self, db_path, dataType, fold=0, binary=False):
+    def __init__(self, db_path, dataType, fold=0, binary=False, hparam_search=False):
 #        if dataType == 'training':
 #            dataType = 'train'
 #        elif dataType == 'test':
@@ -633,6 +633,7 @@ class PASCAL:
         self.id_name_map = dict(zip(range(1, len(classes) + 1), classes))
         self.dataType = dataType
         self.fold = fold
+        self.hparam_search = hparam_search
         self.binary = binary
 
     def getCatIds(self, catNms=[]):
@@ -741,11 +742,11 @@ class PASCAL:
             if read_mode == PASCAL_READ_MODES.INSTANCE:
                 mask_path = osp.join(self.db_path, 'SegmentationObject', ann['mask_name'] + '.png')
                 item = DBPascalItem('pascal-'  + self.dataType + '_' + ann['image_name'] + '_' + str(i), img_path, mask_path,
-                                    ann['object_ids'], fold=self.fold, binary=self.binary)
+                                    ann['object_ids'], fold=self.fold, binary=self.binary, hparam_search=self.hparam_search)
             else:
                 mask_path = osp.join(self.db_path, 'SegmentationClass', ann['mask_name'] + '.png')
                 item = DBPascalItem('pascal-'  + self.dataType + '_' + ann['image_name'] + '_' + str(i), img_path, mask_path,
-                                    ann['class_ids'], ids_map, fold=self.fold, binary=self.binary)
+                                    ann['class_ids'], ids_map, fold=self.fold, binary=self.binary, hparam_search=self.hparam_search)
             items.append(item)
 
         return items
@@ -860,13 +861,14 @@ class DBPascalItem(DBImageItem):
     map_labels = {}
     global_last_class = 0
 
-    def __init__(self, name, img_path, mask_path, obj_ids, ids_map = None, fold=0, binary=False):
+    def __init__(self, name, img_path, mask_path, obj_ids, ids_map = None, fold=0, binary=False, hparam_search=False):
         DBImageItem.__init__(self, name)
         self.img_path = img_path
         self.mask_path = mask_path
         self.obj_ids = obj_ids
         self.fold = fold
         self.binary = binary
+        self.hparam_search = hparam_search
 
         if ids_map is None:
             self.ids_map = dict(zip(obj_ids, 16*np.ones(len(obj_ids))))
@@ -903,7 +905,10 @@ class DBPascalItem(DBImageItem):
         return label_mask
 
     def read_mask(self, orig_mask=False):
-        encoded_mask_path = self.mask_path.replace('SegmentationClass/', 'SegmentationClass/pre_encoded/')
+        if self.hparam_search:
+            encoded_mask_path = self.mask_path.replace('SegmentationClass/', 'SegmentationClass/pre_encoded_hpsearch/')
+        else:
+            encoded_mask_path = self.mask_path.replace('SegmentationClass/', 'SegmentationClass/pre_encoded/')
         mobj_uint = np.array(Image.open(encoded_mask_path))
 
         if self.binary:
