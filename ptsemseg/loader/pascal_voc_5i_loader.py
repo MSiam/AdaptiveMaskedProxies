@@ -41,7 +41,7 @@ class pascalVOC5iLoader(pascalVOCLoader):
                                           augmentations=augmentations, img_norm=img_norm,
                                           n_classes=n_classes, hparam_search=hparam_search)
 
-        with open('/home/mennatul/Code/hyperparam/AdaptiveMaskedImprinting/ptsemseg/loader/oslsm/profile.txt', 'r') as f:
+        with open('/home/eren/Work/AdaptiveMaskedImprinting/ptsemseg/loader/oslsm/profile.txt', 'r') as f:
             profile = str(f.read())
             profile = self.convert_d(profile)
 

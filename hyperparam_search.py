@@ -30,11 +30,12 @@ from ray.tune.schedulers import AsyncHyperBandScheduler
 
 torch.backends.cudnn.benchmark = True
 def post_process(gt, pred):
-    gt[gt != 16] = 0
-    gt[gt == 16] = 1
+    new_class_id = gt[gt!=250].max()
+    gt[gt != new_class_id] = 0
+    gt[gt == new_class_id] = 1
     if pred is not None:
-        pred[pred != 16] = 0
-        pred[pred == 16] = 1
+        pred[pred != new_class_id] = 0
+        pred[pred == new_class_id] = 1
     else:
         pred = None
     return gt, pred
