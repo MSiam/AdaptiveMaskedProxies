@@ -24,7 +24,7 @@ def get_data_path(name):
     Returns:
         (str): The path to the root directory containing the dataset.
     """
-    js = open("/home/eren/Work/AdaptiveMaskedImprinting/config.json").read()
+    js = open("/home/mennatul/Code/hyperparam/AdaptiveMaskedImprinting/config.json").read()
     data = json.loads(js)
     return os.path.expanduser(data[name]["data_path"])
 

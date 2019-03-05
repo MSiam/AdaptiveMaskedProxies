@@ -871,7 +871,12 @@ class DBPascalItem(DBImageItem):
         self.hparam_search = hparam_search
 
         if ids_map is None:
-            self.ids_map = dict(zip(obj_ids, 16*np.ones(len(obj_ids))))
+            if self.hparam_search:
+                self.new_class_id = 11
+            else:
+                self.new_class_id = 16
+
+            self.ids_map = dict(zip(obj_ids, self.new_class_id*np.ones(len(obj_ids))))
         else:
             self.ids_map = ids_map
         last_class = 0
@@ -888,7 +893,7 @@ class DBPascalItem(DBImageItem):
         temp = np.zeros_like(label_mask)
         for c in range(21): # Add only one novel class the rest are considered ignored
             if c in self.ignore_classes:
-                if len(label_mask[label_mask == c]) != 0 and DBPascalItem.global_last_class < 17:
+                if len(label_mask[label_mask == c]) != 0 and DBPascalItem.global_last_class < (self.new_class_id+1):
                     temp[label_mask == c] = DBPascalItem.global_last_class
                     DBPascalItem.global_last_class += 1
                 else:
@@ -897,7 +902,7 @@ class DBPascalItem(DBImageItem):
                 temp[label_mask == c] = DBPascalItem.map_labels[c]
 
         label_mask = temp
-        DBPascalItem.global_last_class = 16
+        DBPascalItem.global_last_class = self.new_class_id
 
         if label_mask[label_mask!=250].sum() == 0: # Images with only background and ignored arent used
             import pdb; pdb.set_trace()

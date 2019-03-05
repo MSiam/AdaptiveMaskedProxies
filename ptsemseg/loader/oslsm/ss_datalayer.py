@@ -75,7 +75,9 @@ class DBInterface():
         filtered_item = []
         for item in items:
             mask = item.read_mask()
-            mask[mask==16]=1
+            new_class_id = mask[mask!=250].max()
+            mask[mask== new_class_id]=1
+            assert mask.max() == 1 , "mask maximum should be 1 for correct filteration"
             if util.change_coordinates(mask, 32.0, 0.0).sum() > 2:
                 filtered_item.append(item)
         return filtered_item
