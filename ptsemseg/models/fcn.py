@@ -272,7 +272,7 @@ class fcn8s(nn.Module):
 
             # Imprint weights for last score layer
             nclasses = self.n_classes
-            self.n_classes = 17
+            self.n_classes = nclasses + 1
             nchannels = embeddings.shape[2]
 
             weight = compute_weight(embeddings, nclasses, labels,
@@ -289,7 +289,6 @@ class fcn8s(nn.Module):
                                      self.score_pool3.weight.data, alpha=alpha)
             self.score_pool3 = nn.Conv2d(self.score_channels[1], self.n_classes, 1, bias=False)
             self.score_pool3.weight.data = weight3
-
             assert self.classifier[2].weight.is_cuda
             assert self.score_pool3.weight.is_cuda
             assert self.score_pool4.weight.is_cuda
@@ -308,7 +307,7 @@ class fcn8s(nn.Module):
         nchannels = self.classifier[2].weight.data.shape[1]
         if cl:
             print('reverse with enabled continual learning')
-            self.n_classes = 16
+            self.n_classes = self.n_classes - 1
             weight = copy.deepcopy(self.classifier[2].weight.data[:-1, ...])
             self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
             self.classifier[2].weight.data = weight
@@ -322,7 +321,7 @@ class fcn8s(nn.Module):
             self.score_pool3.weight.data = weight_sp3
         else:
             print('No Continual Learning for Bg')
-            self.n_classes = 16
+            self.n_classes = self.n_classes - 1
             self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
             self.classifier[2].weight.data = copy.deepcopy(self.original_weights[0])
 

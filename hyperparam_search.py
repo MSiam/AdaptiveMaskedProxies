@@ -154,8 +154,7 @@ def start_hyperopt(args, cfg):
                 {
                     "exp": {
                         "stop": {
-                            "mean_accuracy": 0.98,
-                            "training_iteration": 1000
+                            "training_iteration": 200
                         },
                         "resources_per_trial": {
                             "cpu": 3,
