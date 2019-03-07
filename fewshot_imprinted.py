@@ -73,7 +73,7 @@ def validate(cfg, args):
         if not os.path.exists(args.out_dir+'sprt_gt'):
             os.mkdir(args.out_dir+'sprt_gt')
 
-    if args.fold != 1:
+    if args.fold != -1:
         cfg['data']['fold'] = args.fold
 
     fold = cfg['data']['fold']
