@@ -154,13 +154,16 @@ def validate(cfg, args, cfg_hp=None, rprtr=None):
         else:
             running_metrics.update(gt, pred)
 
+    import pdb; pdb.set_trace()
     if args.binary:
         if args.binary == 1:
             print("Binary Mean IoU ", np.mean(iou_list))
+            rprtr(mean_accuracy=np.mean(iou_list))
         else:
             score, class_iou = running_metrics.get_scores()
             for k, v in score.items():
                 print(k, v)
+            rprtr(mean_accuracy=score["Mean IoU : \t"])
     else:
         score, class_iou = running_metrics.get_scores()
         for k, v in score.items():
@@ -168,6 +171,7 @@ def validate(cfg, args, cfg_hp=None, rprtr=None):
         val_nclasses = model.n_classes + 1
         for i in range(val_nclasses):
             print(i, class_iou[i])
+        rprtr(mean_accuracy=score["Mean IoU : \t"])
 
 def start_hyperopt(args, cfg):
     # Define Scheduler
