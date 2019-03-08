@@ -30,12 +30,12 @@ from ptsemseg.models.utils import masked_embeddings
 
 torch.backends.cudnn.benchmark = True
 
-def get_positive_sample(label, auxloader):
+def get_positive_sample(label, iter_auxloader):
     main_class = torch.mode(label[label!=0])[0].cpu()
     count = 0
     while count<10:
-        sprt_img, sprt_label, qry_img, qry_label, _, _ = next(iter(auxloader))
-        if torch.mode(sprt_label[0][sprt_label[0]!=0])[0].cpu() != main_class:
+        sprt_img, sprt_label, qry_img, qry_label, _, _ = next(iter_auxloader)
+        if torch.mode(sprt_label[0][sprt_label[0] != 0])[0].cpu() != main_class:
             break
         count+= 1
     if count == 10:
@@ -85,12 +85,12 @@ def pairwise_distance(a, squared=False):
 def compute_snnl(sprt_img, sprt_label, qry_img, qry_label,
                  train_img, train_label, model):
 
-    feats_pos = model.extract(sprt_img, sprt_label[0], layer='l0')
-    feats = model.extract(qry_img, qry_label[0], layer='l0')
-    feats_neg = model.extract(train_img, train_label[0], layer='l0')
+    feats_pos = model.module.extract(sprt_img, sprt_label[0], layer='l0')
+    feats = model.module.extract(qry_img, qry_label[0], layer='l0')
+    feats_neg = model.module.extract(train_img, train_label[0], layer='l0')
 
     total_loss = 0
-    for i in range(3):
+    for i in range(len(feats_pos)):
         pos = F.normalize(feats_pos[i].view(-1), p=2, dim=-1)
         anchor = F.normalize(feats[i].view(-1), p=2, dim=-1)
         pos_d = -1 * pairwise_distance(torch.cat([anchor.view(1, -1), pos.view(1, -1)]),
@@ -179,8 +179,6 @@ def train(cfg, writer, logger):
         state = convert_state_dict(torch.load(args.model_path)["model_state"])
         model.load_state_dict(state)
 
-    model_original = model
-
     model = torch.nn.DataParallel(model, device_ids=range(torch.cuda.device_count()))
 
 
@@ -223,12 +221,9 @@ def train(cfg, writer, logger):
     i = start_iter
     flag = True
 
+    iter_auxloader = iter(auxloader)
     while i <= cfg['training']['train_iters'] and flag:
         for i, (images, labels) in enumerate(trainloader):
-#            import matplotlib.pyplot as plt
-#            plt.figure(1);plt.imshow(np.transpose(images[0], (1,2,0)));
-#            plt.figure(2); plt.imshow(labels[0]); plt.show()
-
             i += 1
             start_ts = time.time()
             scheduler.step()
@@ -248,7 +243,13 @@ def train(cfg, writer, logger):
             if (i + 1) % cfg['training']['aux_interval'] == 0:
 
                 # Sample from auxiliary loader
-                sprt_img, sprt_label, qry_img, qry_label = get_positive_sample(labels, auxloader)
+                sprt_img, sprt_label, qry_img, qry_label = get_positive_sample(labels, iter_auxloader)
+#                import matplotlib.pyplot as plt
+#                plt.figure(1);plt.imshow(np.transpose(sprt_img[0][0], (1,2,0)));
+#                plt.figure(2);plt.imshow(np.transpose(images[0], (1,2,0)));
+#                plt.figure(3); plt.imshow(labels[0]);
+#                plt.figure(4); plt.imshow(sprt_label[0][0]); plt.show()
+#
                 if sprt_img is None:
                     continue
                 sprt_img = sprt_img[0].cuda()
@@ -258,8 +259,9 @@ def train(cfg, writer, logger):
                 qry_label = qry_label.cuda()
 
                 # Compute SNNL accordingly
+                optimizer.zero_grad()
                 snnl_loss = compute_snnl(sprt_img, sprt_label, qry_img, qry_label, images,
-                                         labels, model_original)
+                                         labels, model)
 
                 # backpropagate SNN loss
                 snnl_loss.backward()

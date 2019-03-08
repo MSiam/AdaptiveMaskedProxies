@@ -1,5 +1,5 @@
 model:
-    arch: dilated_fcn8s
+    arch: reduced_fcn8s
     lower_dim: True
     weighted_mask: False
     use_norm: False
@@ -16,7 +16,7 @@ data:
     path: /home/menna/Datasets/VOCdevkit/VOC2012/
 training:
     train_iters: 300000
-    aux_interval: 1
+    aux_interval: 100
     batch_size: 1
     val_interval: 500
     n_workers: 1
