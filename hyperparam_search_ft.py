@@ -154,7 +154,6 @@ def validate(cfg, args, cfg_hp=None, rprtr=None):
         else:
             running_metrics.update(gt, pred)
 
-    import pdb; pdb.set_trace()
     if args.binary:
         if args.binary == 1:
             print("Binary Mean IoU ", np.mean(iou_list))
