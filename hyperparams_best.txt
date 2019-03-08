@@ -1,0 +1,10 @@
+1shot:
+======
+imprinting: alpha= 0.25821
+imprinting + FT: alpha=0.13583,lr=9.0959e-05
+
+5shot:
+======
+imprinting: 
+imprinting+FT: 
+

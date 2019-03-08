@@ -76,6 +76,9 @@ def validate(cfg, args):
         if not os.path.exists(args.out_dir+'sprt_gt'):
             os.mkdir(args.out_dir+'sprt_gt')
 
+    if args.fold != -1:
+        cfg['data']['fold'] = args.fold
+
     fold = cfg['data']['fold']
 
     # Setup Dataloader
@@ -120,7 +123,7 @@ def validate(cfg, args):
         print('No Continual Learning of Bg Class')
         model.save_original_weights()
 
-    alpha = 0.2
+    alpha = 0.13583
     for i, (sprt_images, sprt_labels, qry_images, qry_labels,
             original_sprt_images, original_qry_images) in enumerate(valloader):
         print('Starting iteration ', i)
@@ -254,6 +257,13 @@ if __name__ == "__main__":
         default="",
         help="Config file to be used",
     )
+    parser.add_argument(
+        "--fold",
+        type=int,
+        default=-1,
+        help="fold index for pascal 5i"
+    )
+
     args = parser.parse_args()
 
     with open(args.config) as fp:
