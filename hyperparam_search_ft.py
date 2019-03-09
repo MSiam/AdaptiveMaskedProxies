@@ -89,6 +89,8 @@ def validate(cfg, args, cfg_hp=None, rprtr=None):
 
     # Setup optimizer, lr_scheduler and loss function
     cfg["training"]["optimizer"]["lr"] = args.lr
+    cfg["training"]["train_iters"] = args.niters
+
     optimizer_cls = get_optimizer(cfg)
     optimizer_params = {k:v for k, v in cfg['training']['optimizer'].items()
                         if k != 'name'}
@@ -200,10 +202,11 @@ def start_hyperopt(args, cfg):
                         "num_samples": args.n_samples,
                         "config": {
                             "alpha": tune.sample_from(
-                                lambda spec: np.random.uniform(0.001, 0.9)),
+                                lambda spec: np.random.uniform(0.1, 0.6)),
                             "lr": tune.sample_from(
-                                lambda spec: np.random.uniform(1e-6, 1e-2)),
-
+                                lambda spec: np.random.uniform(1e-6, 1e-3)),
+                            "niters": tune.sample_from(
+                                lambda spec: np.random.uniform(1, 10))
                         }
                     }
                 },
@@ -260,6 +263,11 @@ if __name__ == "__main__":
         action="store_true",
         help="enables hpsearch in the dataloader part",
     )
+    parser.add_argument(
+        "--niters",
+        type=int,
+        default=-1,
+        help="number of iterations for finetuning")
 
     args = parser.parse_args()
 
