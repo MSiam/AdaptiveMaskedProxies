@@ -206,7 +206,7 @@ def start_hyperopt(args, cfg):
                             "lr": tune.sample_from(
                                 lambda spec: np.random.uniform(1e-6, 1e-3)),
                             "niters": tune.sample_from(
-                                lambda spec: np.random.uniform(1, 10))
+                                lambda spec: np.random.randint(1, 10))
                         }
                     }
                 },
