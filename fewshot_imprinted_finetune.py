@@ -29,6 +29,10 @@ from ptsemseg.schedulers import get_scheduler
 from ptsemseg.optimizers import get_optimizer
 from ptsemseg.loss import get_loss_function
 
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
+
+
 #torch.backends.cudnn.benchmark = True
 def save_images(sprt_image, sprt_label, qry_image, iteration, out_dir):
     cv2.imwrite(out_dir+'qry_images/%05d.png'%iteration , qry_image[0].numpy()[:, :, ::-1])
@@ -123,7 +127,7 @@ def validate(cfg, args):
         print('No Continual Learning of Bg Class')
         model.save_original_weights()
 
-    alpha = 0.13583
+    alpha = 0.2
     for i, (sprt_images, sprt_labels, qry_images, qry_labels,
             original_sprt_images, original_qry_images) in enumerate(valloader):
         print('Starting iteration ', i)
@@ -138,7 +142,7 @@ def validate(cfg, args):
         qry_images = qry_images.to(device)
 
         # 1- Extract embedding and add the imprinted weights
-        model.imprint(sprt_images, sprt_labels, alpha=alpha)
+        model.imprint(sprt_images, sprt_labels, alpha=alpha, random=args.rand)
 
         optimizer = optimizer_cls(model.parameters(), **optimizer_params)
         scheduler = get_scheduler(optimizer, cfg['training']['lr_schedule'])
@@ -263,6 +267,10 @@ if __name__ == "__main__":
         default=-1,
         help="fold index for pascal 5i"
     )
+    parser.add_argument(
+        "--rand",
+        action="store_true",
+        help="whether to use random weights then finetuning if set to True. Otherwise imprinting is used then finetuning")
 
     args = parser.parse_args()
 

@@ -6,6 +6,7 @@ from skimage.morphology import thin
 from scipy import ndimage
 
 def compute_weight(embeddings, nclasses, labels, original_weight, alpha):
+
     imp_weight = embeddings.mean(0).squeeze()
 
     # Add imprinted weights for -ve samples that occurred in support image
