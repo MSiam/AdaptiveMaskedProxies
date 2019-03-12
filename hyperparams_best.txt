@@ -6,5 +6,5 @@ imprinting + FT: alpha=0.13583,lr=9.0959e-05
 5shot:
 ======
 imprinting: 
-imprinting+FT: 
-
+imprinting+FT: alpha=0.14139,lr=7.6131e-05,niters=2 
+imprinting+FT: alpha=0.85025,lr=9.3879e-05, niters not in hsearch = 2

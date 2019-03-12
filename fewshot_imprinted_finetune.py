@@ -123,7 +123,7 @@ def validate(cfg, args):
         print('No Continual Learning of Bg Class')
         model.save_original_weights()
 
-    alpha = 0.13583
+    alpha = 0.14139
     for i, (sprt_images, sprt_labels, qry_images, qry_labels,
             original_sprt_images, original_qry_images) in enumerate(valloader):
         print('Starting iteration ', i)
