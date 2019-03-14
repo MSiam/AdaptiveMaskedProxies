@@ -13,7 +13,8 @@ def get_model(model_dict, n_classes, version=None):
     param_dict = copy.deepcopy(model_dict)
     param_dict.pop('arch')
 
-    if name == "fcn8s" or name == "dilated_fcn8s" or name == "reduced_fcn8s":
+    if name in ["fcn8s", "dilated_fcn8s", "reduced_fcn8s", "fcn32s",
+                "reduced_fcn32s", "dilated_fcn32s"]:
         model = model(n_classes=n_classes, **param_dict)
         vgg16 = models.vgg16(pretrained=True)
         model.init_vgg16_params(vgg16)
@@ -33,8 +34,11 @@ def _get_model_instance(name):
     try:
         return {
             "fcn8s": fcn8s,
+            "fcn32s": fcn32s,
             "dilated_fcn8s": dilated_fcn8s,
+            "dilated_fcn32s": dilated_fcn32s,
             "reduced_fcn8s": reduced_fcn8s,
+            "reduced_fcn32s": reduced_fcn32s,
             "dilated_fcn8s_highskip": dilated_fcn8s_highskip,
             "osvos": OSVOS,
         }[name]

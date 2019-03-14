@@ -17,6 +17,7 @@ from ptsemseg.models.utils import freeze_weights, \
                                   weighted_masked_embeddings, \
                                   compute_weight
 
+
 # FCN 8s
 class fcn8s(nn.Module):
     def __init__(self, n_classes=21, learned_billinear=False,
@@ -132,11 +133,6 @@ class fcn8s(nn.Module):
                                                           m.kernel_size[0]))
 
     def forward(self, x):
-#        if not self.training:
-#            if self.multires:
-#                print('MultiRes Classifier with Alpha = 0.5')
-#            else:
-#                print('Vanilla Classifier with Alpha = 0.05')
         conv1 = self.conv_block1(x)
         conv2 = self.conv_block2(conv1)
         conv3 = self.conv_block3(conv2)
@@ -359,3 +355,95 @@ class fcn8s(nn.Module):
     def freeze_all_except_classifiers(self):
         self.freeze_weights_extractor()
         freeze_weights(self.fconv_block)
+
+class fcn32s(fcn8s):
+    def __init__(self, *args, **kwargs):
+        super(fcn32s, self).__init__(*args, **kwargs)
+
+    def forward(self, x):
+        conv1 = self.conv_block1(x)
+        conv2 = self.conv_block2(conv1)
+        conv3 = self.conv_block3(conv2)
+        conv4 = self.conv_block4(conv3)
+        conv5 = self.conv_block5(conv4)
+        fconv = self.fconv_block(conv5)
+
+        if self.use_norm:
+            fconv = l2_norm(fconv)
+        if self.use_scale:
+            fconv = self.scale * fconv
+
+        score = self.classifier(fconv)
+        out = F.upsample(score, x.size()[2:])
+
+        return out
+
+    def extract(self, x, label):
+        conv1 = self.conv_block1(x)
+        conv2 = self.conv_block2(conv1)
+        conv3 = self.conv_block3(conv2)
+        conv4 = self.conv_block4(conv3)
+        conv5 = self.conv_block5(conv4)
+        fconv = self.fconv_block(conv5)
+
+        if self.use_norm_weights:
+            fconv_norm = l2_norm(fconv)
+        else:
+            fconv_norm = fconv
+
+        if self.weighted_mask:
+            fconv_pooled = weighted_masked_embeddings(fconv_norm.shape, label,
+                                                      fconv_norm, self.n_classes)
+        else:
+            fconv_pooled = masked_embeddings(fconv_norm.shape, label, fconv_norm,
+                                             self.n_classes)
+
+        return fconv_pooled
+
+    def imprint(self, images, labels, alpha):
+        with torch.no_grad():
+            embeddings = None
+            for ii, ll in zip(images, labels):
+                #ii = ii.unsqueeze(0)
+                ll = ll[0]
+                if embeddings is None:
+                    embeddings_ = self.extract(ii, ll)
+                    embeddings = embeddings
+                else:
+                    embeddings_ = self.extract(ii, ll)
+                    embeddings = torch.cat((embeddings, embeddings_), 0)
+
+            # Imprint weights for last score layer
+            nclasses = self.n_classes
+            self.n_classes = 17
+            nchannels = embeddings.shape[2]
+
+            weight = compute_weight(embeddings, nclasses, labels,
+                                         self.classifier[2].weight.data, alpha=alpha)
+            self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
+            self.classifier[2].weight.data = weight
+
+            assert self.classifier[2].weight.is_cuda
+            assert self.classifier[2].weight.data.shape[1] == 256
+
+    def save_original_weights(self):
+        self.original_weights = []
+        self.original_weights.append(copy.deepcopy(self.classifier[2].weight.data))
+
+    def reverse_imprinting(self, cl=False):
+        nchannels = self.classifier[2].weight.data.shape[1]
+        if cl:
+            print('reverse with enabled continual learning')
+            self.n_classes = 16
+            weight = copy.deepcopy(self.classifier[2].weight.data[:-1, ...])
+            self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
+            self.classifier[2].weight.data = weight
+
+        else:
+            print('No Continual Learning for Bg')
+            self.n_classes = 16
+            self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
+            self.classifier[2].weight.data = copy.deepcopy(self.original_weights[0])
+
+        assert self.classifier[2].weight.data.shape[1] == 256
+

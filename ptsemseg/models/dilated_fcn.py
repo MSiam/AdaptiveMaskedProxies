@@ -12,7 +12,7 @@ from skimage.morphology import thin
 from scipy import ndimage
 import copy
 import numpy as np
-from ptsemseg.models.fcn import fcn8s
+from ptsemseg.models.fcn import fcn8s, fcn32s
 from ptsemseg.models.utils import freeze_weights, \
                                   masked_embeddings, \
                                   weighted_masked_embeddings, \
@@ -41,4 +41,26 @@ class dilated_fcn8s(fcn8s):
             nn.Conv2d(512, 512, 3, dilation=4, padding=4),
             nn.ReLU(inplace=True),
 #            nn.MaxPool2d(2, stride=2, ceil_mode=True),
+        )
+
+class dilated_fcn32s(fcn32s):
+    def __init__(self, *args, **kwargs):
+        super(dilated_fcn32s, self).__init__(*args, **kwargs)
+
+        self.conv_block4 = nn.Sequential(
+            nn.Conv2d(256, 512, 3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, 3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, 3, dilation=2, padding=2),
+            nn.ReLU(inplace=True),
+        )
+
+        self.conv_block5 = nn.Sequential(
+            nn.Conv2d(512, 512, 3, dilation=2, padding=2),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, 3, dilation=4, padding=4),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, 3, dilation=4, padding=4),
+            nn.ReLU(inplace=True),
         )
