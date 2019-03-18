@@ -239,9 +239,6 @@ class fcn8s(nn.Module):
                 ll = ll[0]
                 if embeddings is None:
                     embeddings, early_embeddings, vearly_embeddings = self.extract(ii, ll)
-                    embeddings = embeddings
-                    early_embeddings = early_embeddings
-                    vearly_embeddings = vearly_embeddings
                 else:
                     embeddings_, early_embeddings_, vearly_embeddings_ = self.extract(ii, ll)
                     embeddings = torch.cat((embeddings, embeddings_), 0)
@@ -407,8 +404,7 @@ class fcn32s(fcn8s):
                 #ii = ii.unsqueeze(0)
                 ll = ll[0]
                 if embeddings is None:
-                    embeddings_ = self.extract(ii, ll)
-                    embeddings = embeddings
+                    embeddings = self.extract(ii, ll)
                 else:
                     embeddings_ = self.extract(ii, ll)
                     embeddings = torch.cat((embeddings, embeddings_), 0)
