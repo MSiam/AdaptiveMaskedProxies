@@ -201,7 +201,7 @@ class fcn8s(nn.Module):
                     preds[0][0, i, j] = preds[1][0, i, j]
         return preds[0]
 
-    def extract(self, x, label):
+    def extract(self, x, label, idx=None):
         conv1 = self.conv_block1(x)
         conv2 = self.conv_block2(conv1)
         conv3 = self.conv_block3(conv2)
@@ -220,31 +220,34 @@ class fcn8s(nn.Module):
 
         if self.weighted_mask:
             fconv_pooled = weighted_masked_embeddings(fconv_norm.shape, label,
-                                                      fconv_norm, self.n_classes)
+                                                      fconv_norm, self.n_classes,
+                                                      idx=idx)
             conv3_pooled = weighted_masked_embeddings(conv3_norm.shape, label,
-                                                      conv3_norm, self.n_classes)
+                                                      conv3_norm, self.n_classes,
+                                                      idx=idx)
             conv4_pooled = weighted_masked_embeddings(conv4_norm.shape, label,
-                                                      conv4_norm, self.n_classes)
+                                                      conv4_norm, self.n_classes,
+                                                      idx=idx)
         else:
             fconv_pooled = masked_embeddings(fconv_norm.shape, label, fconv_norm,
-                                             self.n_classes)
+                                             self.n_classes, idx=idx)
             conv3_pooled = masked_embeddings(conv3_norm.shape, label, conv3_norm,
-                                             self.n_classes)
+                                             self.n_classes, idx=idx)
             conv4_pooled = masked_embeddings(conv4_norm.shape, label, conv4_norm,
-                                             self.n_classes)
+                                             self.n_classes, idx=idx)
 
         return fconv_pooled, conv4_pooled, conv3_pooled
 
-    def imprint(self, images, labels, alpha):
+    def imprint(self, images, labels, alpha, idx=None):
         with torch.no_grad():
             embeddings = None
             for ii, ll in zip(images, labels):
                 #ii = ii.unsqueeze(0)
                 ll = ll[0]
                 if embeddings is None:
-                    embeddings, early_embeddings, vearly_embeddings = self.extract(ii, ll)
+                    embeddings, early_embeddings, vearly_embeddings = self.extract(ii, ll, idx=idx)
                 else:
-                    embeddings_, early_embeddings_, vearly_embeddings_ = self.extract(ii, ll)
+                    embeddings_, early_embeddings_, vearly_embeddings_ = self.extract(ii, ll, idx=idx)
                     embeddings = torch.cat((embeddings, embeddings_), 0)
                     early_embeddings = torch.cat((early_embeddings, early_embeddings_), 0)
                     vearly_embeddings = torch.cat((vearly_embeddings, vearly_embeddings_), 0)

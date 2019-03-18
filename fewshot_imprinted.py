@@ -130,20 +130,38 @@ def validate(cfg, args):
         qry_images = qry_images.to(device)
 
         # 1- Extract embedding and add the imprinted weights
-        model.imprint(sprt_images, sprt_labels, alpha=alpha)
+#        imp_indices = np.random.randint(1, sprt_images[0].shape[2]*sprt_images[0].shape[3], 3)
+#        imp_indices = list(imp_indices) + [None]
+        imp_indices = [0, -1, None]
+        preds = None
+        for idx in imp_indices:
+            model.imprint(sprt_images, sprt_labels, alpha=alpha, idx=idx)
 
-        # 2- Infer on the query image
-        model.eval()
-        with torch.no_grad():
-            outputs = model(qry_images)
-            pred = outputs.data.max(1)[1].cpu().numpy()
+            # 2- Infer on the query image
+            model.eval()
+            with torch.no_grad():
+                outputs = model(qry_images)
+#                pred = outputs.data.max(1)[1].cpu().numpy()
+                pred = outputs.data.cpu().numpy()
 
-        # Reverse the last imprinting (Few shot setting only not Continual Learning setup yet)
-        model.reverse_imprinting(args.cl)
+            # Reverse the last imprinting (Few shot setting only not Continual Learning setup yet)
+            model.reverse_imprinting(args.cl)
 
+            if preds is None:
+                preds = np.expand_dims(pred, 0)
+            else:
+                preds = np.concatenate((preds, np.expand_dims(pred, axis=0)), axis=0)
+        pred = np.argmax(np.mean(preds, axis=0), axis=1)
         gt = qry_labels.numpy()
         if args.binary:
             gt, pred = post_process(gt, pred)
+
+#        import matplotlib.pyplot as plt
+#        plt.figure(1); plt.imshow(original_sprt_images[0][0]);
+#        plt.figure(2); plt.imshow(sprt_labels[0][0]);
+#        plt.figure(3); plt.imshow(original_qry_images[0]);
+#        plt.figure(4); plt.imshow(pred[0]);
+#        plt.show()
 
         if args.binary:
             if args.binary == 1:

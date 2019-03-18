@@ -6,6 +6,7 @@ from skimage.morphology import thin
 from scipy import ndimage
 
 def compute_weight(embeddings, nclasses, labels, original_weight, alpha):
+
     imp_weight = embeddings.mean(0).squeeze()
 
     # Add imprinted weights for -ve samples that occurred in support image
@@ -23,7 +24,7 @@ def compute_weight(embeddings, nclasses, labels, original_weight, alpha):
     return weight
 
 
-def masked_embeddings(fmap_shape, label, fconv_norm, n_classes):
+def masked_embeddings(fmap_shape, label, fconv_norm, n_classes, idx=None):
     label = label.unsqueeze(0).unsqueeze(0)
     fconv_norm = nn.functional.interpolate(fconv_norm,
                                       size=(int(label.shape[2]), int(label.shape[3])),
@@ -35,7 +36,15 @@ def masked_embeddings(fmap_shape, label, fconv_norm, n_classes):
             if len(temp[label[0]==c]) == 0:
                 tempv = 0
             else:
-                tempv = temp[label[0]==c].mean()
+                if idx == None:
+                    tempv = temp[label[0]==c].mean()
+                else:
+                    if idx < len(temp[label[0]==c]):
+                        tempv = temp[label[0]==c][idx]
+                    else:
+                        print('Going OUT of range')
+                        tempv = temp[label[0]==c].mean()
+
             fconv_pooled[:, c, i, 0, 0] = tempv
     return fconv_pooled
 
