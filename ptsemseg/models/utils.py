@@ -8,19 +8,40 @@ from scipy import ndimage
 def compute_weight(embeddings, nclasses, labels, original_weight, alpha):
     imp_weight = embeddings.mean(0).squeeze()
 
+    newc_weights = torch.zeros(new_n_classes,
+                               original_weight.shape[1],
+                               original_weight.shape[2],
+                               original_weight.shape[3])
+
+    original_weight = torch.cat((original_weight, newc_weights.cuda()), 0)
+
     # Add imprinted weights for -ve samples that occurred in support image
+    if type(alpha) == list:
+        old_alpha, new_alpha = alpha
+    else:
+        old_alpha = new_alpha = alpha
+
     for c in range(nclasses):
         if len(labels[labels==c]) != 0:
             temp = original_weight[c, ...].squeeze()
-            temp = (1-alpha)*temp + alpha*imp_weight[c].cuda()
+            temp = (1-old_alpha)*temp + old_alpha*imp_weight[c].cuda()
             temp = temp / temp.norm(p=2)
             original_weight[c, ...] = temp.unsqueeze(1).unsqueeze(1)
 
     # Add imprinted weights for + sample (last class)
-    imp_weight[-1] = imp_weight[-1] / imp_weight[-1].norm(p=2)
-    imp_weight = imp_weight[-1].unsqueeze(0).unsqueeze(2).unsqueeze(3)
-    weight = torch.cat((original_weight, imp_weight.cuda()), 0)
+    for c in range(nclasses, nclasses+new_n_classes):
+        if len(labels[labels==c]) != 0:
+            temp = original_weight[c, ...].squeeze()
+            if temp.sum() == 0:
+                temp = imp_weight[c] / imp_weight[c].norm(p=2)
+            else:
+                temp = (1-new_alpha)*temp + new_alpha*imp_weight[c].cuda()
+                temp = temp / temp.norm(p=2)
+            original_weight[c, ...] = temp.unsqueeze(1).unsqueeze(1)
+
+    weight = original_weight
     return weight
+
 
 
 def masked_embeddings(fmap_shape, label, fconv_norm, n_classes):

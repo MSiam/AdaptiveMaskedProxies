@@ -65,6 +65,7 @@ class pascalVOCLoader(data.Dataset):
         img_norm=True,
         fold=None,
         n_classes=21
+
     ):
         self.root = os.path.expanduser(root)
         self.split = split
@@ -83,6 +84,10 @@ class pascalVOCLoader(data.Dataset):
             file_list = tuple(open(path, "r"))
             file_list = [id_.rstrip() for id_ in file_list]
             self.files[split] = file_list
+
+        if self.fold is not None:
+            self.ignore_classes = range(self.fold*5+1, (self.fold+1)*5+1)
+
         self.setup_annotations()
         self.tf = transforms.Compose([transforms.ToTensor(),
                                       transforms.Normalize([0.485, 0.456, 0.406],
@@ -156,19 +161,17 @@ class pascalVOCLoader(data.Dataset):
             ]
         )
 
-    def filter_seg(self, fold, label_mask):
-        if self.fold is not None: # Some classes are ignored for OSLSM Training
-            ignore_classes = range(self.fold*5+1, (self.fold+1)*5+1)
-            class_count = 0
-            for c in range(21):
-                if c in ignore_classes:
-                    label_mask[label_mask == c] = 250
-                else:
-                    label_mask[label_mask == c] = class_count
-                    class_count += 1
+    def filter_seg(self, ignore_classes, label_mask):
+        class_count = 0
+        for c in range(21):
+            if c in ignore_classes:
+                label_mask[label_mask == c] = 250
+            else:
+                label_mask[label_mask == c] = class_count
+                class_count += 1
 
-            if label_mask[label_mask!=250].sum() == 0: # Images with only background and ignored arent used
-                label_mask[label_mask != 250] = 250
+        if label_mask[label_mask!=250].sum() == 0: # Images with only background and ignored arent used
+            label_mask[label_mask != 250] = 250
         return label_mask
 
     def encode_segmap(self, mask):
@@ -258,7 +261,7 @@ class pascalVOCLoader(data.Dataset):
                 data = io.loadmat(lbl_path)
                 lbl = data["GTcls"][0]["Segmentation"][0].astype(np.int32)
                 if self.fold is not None:
-                    lbl = self.filter_seg(self.fold, lbl)
+                    lbl = self.filter_seg(self.ignore_classes, lbl)
                 lbl = m.toimage(lbl, high=lbl.max(), low=lbl.min())
                 m.imsave(pjoin(target_path, ii + ".png"), lbl)
 
@@ -267,7 +270,7 @@ class pascalVOCLoader(data.Dataset):
                 lbl_path = pjoin(self.root, "SegmentationClass", fname)
                 lbl = self.encode_segmap(m.imread(lbl_path))
                 if self.fold is not None:
-                    lbl = self.filter_seg(self.fold, lbl)
+                    lbl = self.filter_seg(self.ignore_classes, lbl)
                 lbl = m.toimage(lbl, high=lbl.max(), low=lbl.min())
                 m.imsave(pjoin(target_path, fname), lbl)
 

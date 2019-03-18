@@ -59,13 +59,28 @@ def train(cfg, writer, logger):
         fold=cfg['data']['fold'],
         n_classes=cfg['data']['n_classes'])
 
-    v_loader = data_loader(
-        data_path,
-        is_transform=True,
-        split=cfg['data']['val_split'],
-        img_size=(cfg['data']['img_rows'], cfg['data']['img_cols']),
-        fold=cfg['data']['fold'],
-        n_classes=cfg['data']['n_classes'])
+    if 'cl' in cfg['data']['dataset']:
+
+        v_loader = data_loader(
+            data_path,
+            is_transform=True,
+            split=cfg['data']['val_split'],
+            img_size=(cfg['data']['img_rows'], cfg['data']['img_cols']),
+            fold=cfg['data']['fold'],
+            n_classes=cfg['data']['n_classes'],
+            classes_train=t_loader.classes_train,
+            classes_incremental=t_loader.classes_incremental)
+
+    else:
+
+        v_loader = data_loader(
+            data_path,
+            is_transform=True,
+            split=cfg['data']['val_split'],
+            img_size=(cfg['data']['img_rows'], cfg['data']['img_cols']),
+            fold=cfg['data']['fold'],
+            n_classes=cfg['data']['n_classes'])
+
 
     n_classes = t_loader.n_classes
     trainloader = data.DataLoader(t_loader,

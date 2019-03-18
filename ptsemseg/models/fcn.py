@@ -194,6 +194,29 @@ class fcn8s(nn.Module):
 
         return out
 
+    def incrementally_add_classes(self, new_n_classes):
+        original_weight_0 = copy.deepcopy(self.classifier[2].weight.data)
+        current_classes = original_weight_0.shape[0]
+        self.classifier[2] = nn.Conv2d(256, new_n_classes, 1, bias=False)
+        torch.nn.init.xavier_uniform_(self.classifier[2].weight)
+        self.classifier[2].weight.data[:current_classes, ...] = \
+                copy.deepcopy(original_weight_0)
+        self.classifier[2].cuda()
+
+        original_weight_4 = copy.deepcopy(self.score_pool4.weight.data)
+        self.score_pool4 = nn.Conv2d(512, new_n_classes, 1, bias=False)
+        torch.nn.init.xavier_uniform_(self.score_pool4.weight)
+        self.score_pool4.weight.data[:current_classes, ...] = \
+                copy.deepcopy(original_weight_4)
+        self.score_pool4.cuda()
+
+        original_weight_3 = copy.deepcopy(self.score_pool3.weight.data)
+        self.score_pool3 = nn.Conv2d(256, new_n_classes, 1, bias=False)
+        torch.nn.init.xavier_uniform_(self.score_pool3.weight)
+        self.score_pool3.weight.data[:current_classes, ...] = \
+                copy.deepcopy(original_weight_3)
+        self.score_pool3.cuda()
+
     def ensemble_classify(self, preds):
         for i in range(preds[0].shape[1]):
             for j in range(preds[0].shape[2]):
