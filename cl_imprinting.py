@@ -96,7 +96,8 @@ def validate(cfg, args):
     optimizer_params = {k:v for k, v in cfg['training']['optimizer'].items()
                         if k != 'name'}
 
-    cl_log = open('cl_imprinting.txt', 'w')
+    cl_log = open(args.cl_log, 'w')
+    alpha_ = args.alpha
 
     for taski in range(t_loader.n_tasks):
 
@@ -119,7 +120,7 @@ def validate(cfg, args):
             images = images.to(device)
             labels = labels.to(device)
 
-            model.imprint(images, labels, alpha=[0.01, 0.05],
+            model.imprint(images, labels, alpha=[0.01, alpha_],
                           new_n_classes=current_n_classes)
 
             if (i + 1) % cfg['training']['print_interval'] == 0:
@@ -158,14 +159,18 @@ def validate(cfg, args):
 
         # Evaluate mIoU
         cl_log.write('Task ' + str(taski) + '\n')
-        score, class_iou = running_metrics.get_scores()
-        for k, v in score.items():
-            print(k, v)
-            cl_log.write(k + ' ' +str(v) +'\n')
-        val_nclasses = current_n_classes
-        for i in range(val_nclasses):
+        _, class_iou = running_metrics.get_scores()
+
+        val_nclasses = model.n_classes + (taski+1)*2
+        avg = 0.0
+        count = 0
+        for i in range(model.n_classes, model.n_classes + (taski+1)*2):
             print(i, class_iou[i])
             cl_log.write(str(i) + ' ' + str(class_iou[i])+'\n')
+            avg += class_iou[i]
+            count += 1
+        cl_log.write('Mean IoU of New Classes '+str(avg/count))
+        print('Mean IoU of New Classes '+str(avg/count))
 
     cl_log.close()
 
@@ -208,6 +213,20 @@ if __name__ == "__main__":
         default="",
         help="Config file to be used",
     )
+
+    parser.add_argument(
+        "--cl_log",
+        type=str,
+        default="cl_log.txt",
+        help="log file for continual learning output used for plotting"
+    )
+    parser.add_argument(
+        "--alpha",
+        type=float,
+        default=0.2,
+        help="update rate in adaptive imprinting"
+    )
+
     args = parser.parse_args()
 
     with open(args.config) as fp:

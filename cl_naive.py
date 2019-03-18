@@ -123,7 +123,12 @@ def validate(cfg, args):
             loss_fn = get_loss_function(cfg)
 
             model.train()
-            for j in range(cfg['training']['train_iters']):
+            if args.niters == -1:
+                train_iters = cfg['training']['train_iters']
+            else:
+                train_iters = args.niters
+
+            for j in range(train_iters):
                 for b in range(len(images)):
                     torch.cuda.empty_cache()
                     scheduler.step()
@@ -137,7 +142,7 @@ def validate(cfg, args):
             if (i + 1) % cfg['training']['print_interval'] == 0:
                 fmt_str = "Iter [{:d}/{:d}]  Loss: {:.4f}"
                 print_str = fmt_str.format(i+1,
-                                       cfg['training']['train_iters']*len(train_loader),
+                                       train_iters*len(train_loader),
                                        loss.item())
                 print(print_str)
 
@@ -171,14 +176,18 @@ def validate(cfg, args):
 
         # Evaluate mIoU
         cl_log.write('Task ' + str(taski) + '\n')
-        score, class_iou = running_metrics.get_scores()
-        for k, v in score.items():
-            print(k, v)
-            cl_log.write(k + ' ' +str(v) +'\n')
-        val_nclasses = model.n_classes + (taski+1)*2
-        for i in range(val_nclasses):
+        _, class_iou = running_metrics.get_scores()
+
+        val_nclasses = model.n_classes + (taski + 1) * 2
+        avg = 0.0
+        count = 0
+        for i in range(model.n_classes, model.n_classes + (taski+1)*2):
             print(i, class_iou[i])
             cl_log.write(str(i) + ' ' + str(class_iou[i])+'\n')
+            avg += class_iou[i]
+            count += 1
+        cl_log.write('Mean IoU of New Classes '+str(avg/count))
+        print('Mean IoU of New Classes '+str(avg/count))
 
     cl_log.close()
 
@@ -226,6 +235,12 @@ if __name__ == "__main__":
         type=str,
         default="cl_log.txt",
         help="log file for continual learning output used for plotting"
+    )
+    parser.add_argument(
+        "--niters",
+        type=int,
+        default=-1,
+        help="# iterations"
     )
 
     args = parser.parse_args()
