@@ -1,19 +1,19 @@
 model:
-    arch: dilated_fcn8s
+    arch: reduced_fcn8s
     lower_dim: True
     weighted_mask: False
     use_norm: False
     offsetting: False
     use_scale: False
 data:
-    dataset: pascal_cl
+    dataset: ipascal
     fold: 4
     n_classes: 11
     train_split: train_aug
     val_split: val
     img_rows: 'same'
     img_cols: 'same'
-    path: /home/menna/Datasets/VOCdevkit/VOC2012/
+    path: /home/eren/Data/VOCdevkit/VOC2012/
 training:
     train_iters: 300000
     batch_size: 1

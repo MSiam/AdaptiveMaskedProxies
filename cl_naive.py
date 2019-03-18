@@ -81,11 +81,6 @@ def validate(cfg, args):
             fold=cfg['data']['fold'],
             n_classes=cfg['data']['n_classes'])
 
-    if cfg['model']['lower_dim']:
-        nchannels = 256
-    else:
-        nchannels = 4096
-
     n_classes = cfg['data']['n_classes']
 
     # Setup Model
@@ -100,7 +95,7 @@ def validate(cfg, args):
     optimizer_params = {k:v for k, v in cfg['training']['optimizer'].items()
                         if k != 'name'}
 
-    cl_log = open('cl_naive.txt', 'w')
+    cl_log = open(args.cl_log, 'w')
 
     for taski in range(t_loader.n_tasks):
 
@@ -226,6 +221,13 @@ if __name__ == "__main__":
         default="",
         help="Config file to be used",
     )
+    parser.add_argument(
+        "--cl_log",
+        type=str,
+        default="cl_log.txt",
+        help="log file for continual learning output used for plotting"
+    )
+
     args = parser.parse_args()
 
     with open(args.config) as fp:

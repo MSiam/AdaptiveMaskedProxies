@@ -81,11 +81,6 @@ def validate(cfg, args):
             fold=cfg['data']['fold'],
             n_classes=cfg['data']['n_classes'])
 
-    if cfg['model']['lower_dim']:
-        nchannels = 256
-    else:
-        nchannels = 4096
-
     n_classes = cfg['data']['n_classes']
 
     # Setup Model
@@ -124,7 +119,7 @@ def validate(cfg, args):
             images = images.to(device)
             labels = labels.to(device)
 
-            model.imprint(images, labels, nchannels, alpha=[0.01, 0.05],
+            model.imprint(images, labels, alpha=[0.01, 0.05],
                           new_n_classes=current_n_classes)
 
             if (i + 1) % cfg['training']['print_interval'] == 0:

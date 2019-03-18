@@ -59,7 +59,7 @@ def train(cfg, writer, logger):
         fold=cfg['data']['fold'],
         n_classes=cfg['data']['n_classes'])
 
-    if 'cl' in cfg['data']['dataset']:
+    if cfg['data']['dataset'] == "ipascal":
 
         v_loader = data_loader(
             data_path,

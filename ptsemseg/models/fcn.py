@@ -224,7 +224,7 @@ class fcn8s(nn.Module):
                     preds[0][0, i, j] = preds[1][0, i, j]
         return preds[0]
 
-    def extract(self, x, label):
+    def extract(self, x, label, new_n_classes):
         conv1 = self.conv_block1(x)
         conv2 = self.conv_block2(conv1)
         conv3 = self.conv_block3(conv2)
@@ -243,55 +243,58 @@ class fcn8s(nn.Module):
 
         if self.weighted_mask:
             fconv_pooled = weighted_masked_embeddings(fconv_norm.shape, label,
-                                                      fconv_norm, self.n_classes)
+                                                      fconv_norm, new_n_classes)
             conv3_pooled = weighted_masked_embeddings(conv3_norm.shape, label,
-                                                      conv3_norm, self.n_classes)
+                                                      conv3_norm, new_n_classes)
             conv4_pooled = weighted_masked_embeddings(conv4_norm.shape, label,
-                                                      conv4_norm, self.n_classes)
+                                                      conv4_norm, new_n_classes)
         else:
             fconv_pooled = masked_embeddings(fconv_norm.shape, label, fconv_norm,
-                                             self.n_classes)
+                                             new_n_classes)
             conv3_pooled = masked_embeddings(conv3_norm.shape, label, conv3_norm,
-                                             self.n_classes)
+                                             new_n_classes)
             conv4_pooled = masked_embeddings(conv4_norm.shape, label, conv4_norm,
-                                             self.n_classes)
+                                             new_n_classes)
 
         return fconv_pooled, conv4_pooled, conv3_pooled
 
-    def imprint(self, images, labels, alpha):
+    def imprint(self, images, labels, alpha, new_n_classes=17):
         with torch.no_grad():
             embeddings = None
             for ii, ll in zip(images, labels):
                 #ii = ii.unsqueeze(0)
                 ll = ll[0]
                 if embeddings is None:
-                    embeddings, early_embeddings, vearly_embeddings = self.extract(ii, ll)
+                    embeddings, early_embeddings, vearly_embeddings = self.extract(ii, ll, new_n_classes)
                     embeddings = embeddings
                     early_embeddings = early_embeddings
                     vearly_embeddings = vearly_embeddings
                 else:
-                    embeddings_, early_embeddings_, vearly_embeddings_ = self.extract(ii, ll)
+                    embeddings_, early_embeddings_, vearly_embeddings_ = self.extract(ii, ll, new_n_classes)
                     embeddings = torch.cat((embeddings, embeddings_), 0)
                     early_embeddings = torch.cat((early_embeddings, early_embeddings_), 0)
                     vearly_embeddings = torch.cat((vearly_embeddings, vearly_embeddings_), 0)
 
             # Imprint weights for last score layer
             nclasses = self.n_classes
-            self.n_classes = 17
+            self.n_classes = new_n_classes
             nchannels = embeddings.shape[2]
 
             weight = compute_weight(embeddings, nclasses, labels,
-                                         self.classifier[2].weight.data, alpha=alpha)
+                                         self.classifier[2].weight.data, alpha=alpha,
+                                         new_n_classes=new_n_classes-nclasses)
             self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
             self.classifier[2].weight.data = weight
 
             weight4 = compute_weight(early_embeddings, nclasses, labels,
-                                     self.score_pool4.weight.data, alpha=alpha)
+                                     self.score_pool4.weight.data, alpha=alpha,
+                                     new_n_classes=new_n_classes-nclasses)
             self.score_pool4 = nn.Conv2d(self.score_channels[0], self.n_classes, 1, bias=False)
             self.score_pool4.weight.data = weight4
 
             weight3 = compute_weight(vearly_embeddings, nclasses, labels,
-                                     self.score_pool3.weight.data, alpha=alpha)
+                                     self.score_pool3.weight.data, alpha=alpha,
+                                     new_n_classes=new_n_classes-nclasses)
             self.score_pool3 = nn.Conv2d(self.score_channels[1], self.n_classes, 1, bias=False)
             self.score_pool3.weight.data = weight3
 

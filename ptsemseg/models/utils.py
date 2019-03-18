@@ -5,7 +5,8 @@ import torch.nn.functional as F
 from skimage.morphology import thin
 from scipy import ndimage
 
-def compute_weight(embeddings, nclasses, labels, original_weight, alpha):
+def compute_weight(embeddings, nclasses, labels, original_weight,
+                   alpha, new_n_classes=1):
     imp_weight = embeddings.mean(0).squeeze()
 
     newc_weights = torch.zeros(new_n_classes,
@@ -42,17 +43,15 @@ def compute_weight(embeddings, nclasses, labels, original_weight, alpha):
     weight = original_weight
     return weight
 
-
-
 def masked_embeddings(fmap_shape, label, fconv_norm, n_classes):
     label = label.unsqueeze(0).unsqueeze(0)
     fconv_norm = nn.functional.interpolate(fconv_norm,
                                       size=(int(label.shape[2]), int(label.shape[3])),
                                       mode='nearest')
-    fconv_pooled = torch.zeros(fmap_shape[0], n_classes+1, fmap_shape[1], 1, 1)
+    fconv_pooled = torch.zeros(fmap_shape[0], n_classes, fmap_shape[1], 1, 1)
     for i in range(int(fconv_norm.shape[1])):
         temp = fconv_norm[:, i, ...]
-        for c in range(n_classes+1):
+        for c in range(n_classes):
             if len(temp[label[0]==c]) == 0:
                 tempv = 0
             else:
