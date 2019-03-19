@@ -15,14 +15,42 @@ from ptsemseg.models.utils import freeze_weights, \
                                   masked_embeddings, \
                                   weighted_masked_embeddings, \
                                   compute_weight
+from ptsemseg.models.resnet import Bottleneck, conv1x1, conv3x3
 import torchvision
+import copy
 
 class SIN(nn.Module):
-    def __init__(self, n_classes=21):
+    def __init__(self, layers, n_classes=21, zero_init_residual=False):
         super(SIN, self).__init__()
-        self.n_classes = n_classes
-        self.score_channels = [1024, 512, 256]
 
+        ####################### Construct ResNet 50 8stride Model #####################################
+        self.inplanes = 64
+        self.n_classes = n_classes
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
+                               bias=False)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.relu = nn.ReLU(inplace=False)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        self.layer1 = self._make_layer(Bottleneck, 64, layers[0])
+        self.layer2 = self._make_layer(Bottleneck, 128, layers[1], stride=2)
+        self.layer3 = self._make_layer(Bottleneck, 256, layers[2], stride=2)
+        self.score_channels = [1024, 512, 256]
+        self.classifier = nn.Sequential(
+            nn.ReLU(inplace=False),
+            nn.Dropout2d(),
+            nn.Conv2d(self.score_channels[0], self.n_classes, 1, bias=False),
+            )
+        self.score_pool4 = nn.Conv2d(self.score_channels[1], self.n_classes, 1, bias=False)
+        self.score_pool3 = nn.Conv2d(self.score_channels[2], self.n_classes, 1, bias=False)
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
+        ################################# Load Stylied ImageNet Model###############################
         model_urls = {
         'resnet50_trained_on_SIN': \
                 'https://bitbucket.org/robert_geirhos/texture-vs-shape-pretrained-models/raw/6f41d2e86fc60566f78de64ecff35cc61eb6436f/resnet50_train_60_epochs-c8e5653e.pth.tar',
@@ -32,34 +60,60 @@ class SIN(nn.Module):
                 'https://bitbucket.org/robert_geirhos/texture-vs-shape-pretrained-models/raw/60b770e128fffcbd8562a3ab3546c1a735432d03/resnet50_finetune_60_epochs_lr_decay_after_30_start_resnet50_train_45_epochs_combined_IN_SF-ca06340c.pth.tar',
         }
 
-        self.model = torchvision.models.resnet50(pretrained=False)
+        temp_model = torchvision.models.resnet50(pretrained=False)
+        temp_model = torch.nn.DataParallel(temp_model).cuda()
         checkpoint = model_zoo.load_url(model_urls['resnet50_trained_on_SIN_and_IN_then_finetuned_on_IN'])
-        self.model = torch.nn.DataParallel(self.model).cuda()
-        self.model.load_state_dict(checkpoint["state_dict"])
+        temp_model.load_state_dict(checkpoint["state_dict"])
+        self.init_resnet50_params(temp_model)
 
-        self.extractor = list(list(self.model.children())[0].children())[:-3]
-        self.classifier = nn.Sequential(
-            nn.ReLU(inplace=True),
-            nn.Dropout2d(),
-            nn.Conv2d(self.score_channels[0], self.n_classes, 1, bias=False),
+    def _make_layer(self, block, planes, blocks, stride=1):
+        downsample = None
+        if stride != 1 or self.inplanes != planes * block.expansion:
+            downsample = nn.Sequential(
+                conv1x1(self.inplanes, planes * block.expansion, stride),
+                nn.BatchNorm2d(planes * block.expansion),
             )
-        self.score_pool4 = nn.Conv2d(self.score_channels[1], self.n_classes, 1, bias=False)
-        self.score_pool3 = nn.Conv2d(self.score_channels[2], self.n_classes, 1, bias=False)
 
+        layers = []
+        layers.append(block(self.inplanes, planes, stride, downsample))
+        self.inplanes = planes * block.expansion
+        for _ in range(1, blocks):
+            layers.append(block(self.inplanes, planes))
+
+        return nn.Sequential(*layers)
+
+
+    def init_resnet50_params(self, model_weights):
+        model_layers = dict(model_weights.module.named_modules())
+        my_layers = dict(self.named_modules())
+
+        for k, v in model_layers.items():
+            if k not in my_layers.keys():
+                continue
+            if isinstance(my_layers[k], nn.Conv2d) or isinstance(my_layers[k], nn.BatchNorm2d):
+                assert my_layers[k].weight.size() == model_layers[k].weight.size()
+                my_layers[k].weight.data = model_layers[k].weight.data
+                if my_layers[k].bias is not None:
+                    my_layers[k].bias.data = model_layers[k].bias.data
+                if isinstance(my_layers[k], nn.BatchNorm2d):
+                    my_layers[k].running_mean.data = model_layers[k].running_mean.data
+                    my_layers[k].running_var.data = model_layers[k].running_var.data
 
     def forward(self, x):
-        feats = x
-        for m in range(len(self.extractor)-3):
-            feats = self.extractor[m](feats)
-            print('FEATS ', feats.shape)
-        conv4 = self.extractor[-3](feats)
-        conv3 = self.extractor[-2](conv4)
-        fconv = self.extractor[-1](conv3)
-        score = self.classifier(fconv)
-        score_pool4 = self.score_pool4(conv4)
-        score_pool3 = self.score_pool3(conv3)
+        x1 = self.conv1(x)
+        x1 = self.relu(self.bn1(x1))
+        x2 = self.maxpool(x1)
+        x3 = self.layer1(x2)
+        x4 = self.layer2(x3)
+        x5 = self.layer3(x4)
+
+        score = self.classifier(x5)
+        score_pool3 = self.score_pool3(x3)
+        score_pool4 = self.score_pool4(x4)
+
         score = F.upsample(score, score_pool4.size()[2:])
         score += score_pool4
+
         score = F.upsample(score, score_pool3.size()[2:])
         score += score_pool3
 
@@ -68,143 +122,18 @@ class SIN(nn.Module):
         return out
 
     def extract(self, x, label):
-        feats = x
-        for m in range(len(self.extractor)-3):
-            feats = self.extractor[m](feats)
-            print('FEATS ', feats.shape)
+        x1 = self.conv1(x)
+        x1 = self.relu(self.bn1(x1))
+        x2 = self.maxpool(x1)
+        x3 = self.layer1(x2)
+        x4 = self.layer2(x3)
+        x5 = self.layer3(x4)
 
-        conv4 = self.extractor[-3](feats)
-        conv3 = self.extractor[-2](conv4)
-        fconv = self.extractor[-1](conv3)
-
-        fconv_pooled = masked_embeddings(fconv.shape, label, fconv,
+        fconv_pooled = masked_embeddings(x5.shape, label, x5,
                                          self.n_classes)
-        conv3_pooled = masked_embeddings(conv3.shape, label, conv3,
+        conv3_pooled = masked_embeddings(x3.shape, label, x3,
                                          self.n_classes)
-        conv4_pooled = masked_embeddings(conv4.shape, label, conv4,
+        conv4_pooled = masked_embeddings(x4.shape, label, x4,
                                          self.n_classes)
 
         return fconv_pooled, conv4_pooled, conv3_pooled
-
-    def imprint(self, images, labels, nchannels, alpha):
-        with torch.no_grad():
-            embeddings = None
-            for ii, ll in zip(images, labels):
-                #ii = ii.unsqueeze(0)
-                ll = ll[0]
-                if embeddings is None:
-                    embeddings, early_embeddings, vearly_embeddings = self.extract(ii, ll)
-                    embeddings = embeddings
-                    early_embeddings = early_embeddings
-                    vearly_embeddings = vearly_embeddings
-                else:
-                    embeddings_, early_embeddings_, vearly_embeddings_ = self.extract(ii, ll)
-                    embeddings = torch.cat((embeddings, embeddings_), 0)
-                    early_embeddings = torch.cat((early_embeddings, early_embeddings_), 0)
-                    vearly_embeddings = torch.cat((vearly_embeddings, vearly_embeddings_), 0)
-
-            # Imprint weights for last score layer
-            nclasses = self.n_classes
-            self.n_classes = 17
-
-            weight = compute_weight(embeddings, nclasses, labels,
-                                         self.classifier[2].weight.data, alpha=alpha)
-            self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
-            self.classifier[2].weight.data = weight
-
-            weight4 = compute_weight(early_embeddings, nclasses, labels,
-                                     self.score_pool4.weight.data, alpha=alpha)
-            self.score_pool4 = nn.Conv2d(self.score_channels[0], self.n_classes, 1, bias=False)
-            self.score_pool4.weight.data = weight4
-
-            weight3 = compute_weight(vearly_embeddings, nclasses, labels,
-                                     self.score_pool3.weight.data, alpha=alpha)
-            self.score_pool3 = nn.Conv2d(self.score_channels[1], self.n_classes, 1, bias=False)
-            self.score_pool3.weight.data = weight3
-
-            assert self.classifier[2].weight.is_cuda
-            assert self.score_pool3.weight.is_cuda
-            assert self.score_pool4.weight.is_cuda
-            assert self.score_pool3.weight.data.shape[1] == self.score_channels[1]
-            assert self.classifier[2].weight.data.shape[1] == 256
-            assert self.score_pool4.weight.data.shape[1] == self.score_channels[0]
-
-    def save_original_weights(self):
-        self.original_weights = []
-        self.original_weights.append(copy.deepcopy(self.classifier[2].weight.data))
-        self.original_weights.append(copy.deepcopy(self.score_pool4.weight.data))
-        self.original_weights.append(copy.deepcopy(self.score_pool3.weight.data))
-
-
-    def reverse_imprinting(self, nchannels, cl=False):
-        if cl:
-            print('reverse with enabled continual learning')
-            self.n_classes = 16
-            weight = copy.deepcopy(self.classifier[2].weight.data[:-1, ...])
-            self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
-            self.classifier[2].weight.data = weight
-
-            weight_sp4 = copy.deepcopy(self.score_pool4.weight.data[:-1, ...])
-            self.score_pool4 = nn.Conv2d(self.score_channels[0], self.n_classes, 1, bias=False)
-            self.score_pool4.weight.data = weight_sp4
-
-            weight_sp3 = copy.deepcopy(self.score_pool3.weight.data[:-1, ...])
-            self.score_pool3 = nn.Conv2d(self.score_channels[1], self.n_classes, 1, bias=False)
-            self.score_pool3.weight.data = weight_sp3
-        else:
-            print('No Continual Learning for Bg')
-            self.n_classes = 16
-            self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
-            self.classifier[2].weight.data = copy.deepcopy(self.original_weights[0])
-
-            self.score_pool4 = nn.Conv2d(self.score_channels[0], self.n_classes, 1, bias=False)
-            self.score_pool4.weight.data = copy.deepcopy(self.original_weights[1])
-
-            self.score_pool3 = nn.Conv2d(self.score_channels[1], self.n_classes, 1, bias=False)
-            self.score_pool3.weight.data = copy.deepcopy(self.original_weights[2])
-
-        assert self.score_pool3.weight.data.shape[1] == self.score_channels[1]
-        assert self.classifier[2].weight.data.shape[1] == 256
-        assert self.score_pool4.weight.data.shape[1] == self.score_channels[0]
-
-    def init_vgg16_params(self, vgg16, copy_fc8=False):
-        blocks = [
-            self.conv_block1,
-            self.conv_block2,
-            self.conv_block3,
-            self.conv_block4,
-            self.conv_block5,
-        ]
-
-        ranges = [[0, 4], [5, 9], [10, 16], [17, 23], [24, 29]]
-        features = list(vgg16.features.children())
-
-        for idx, conv_block in enumerate(blocks):
-            for l1, l2 in zip(features[ranges[idx][0] : ranges[idx][1]], conv_block):
-                if isinstance(l1, nn.Conv2d) and isinstance(l2, nn.Conv2d):
-                    assert l1.weight.size() == l2.weight.size()
-                    assert l1.bias.size() == l2.bias.size()
-                    l2.weight.data = l1.weight.data
-                    l2.bias.data = l1.bias.data
-#        for i1, i2 in zip([0, 3], [0, 3]):
-#            l1 = vgg16.classifier[i1]
-#            l2 = self.fconv_block[i2]
-#            l2.weight.data = l1.weight.data.view(l2.weight.size())
-#            l2.bias.data = l1.bias.data.view(l2.bias.size())
-#        n_class = self.classifier[2].weight.size()[0]
-#        if copy_fc8:
-#            l1 = vgg16.classifier[6]
-#            l2 = self.classifier[2]
-#            l2.weight.data = l1.weight.data[:n_class, :].view(l2.weight.size())
-#            l2.bias.data = l1.bias.data[:n_class]
-
-    def freeze_weights_extractor(self):
-        freeze_weights(self.conv_block1)
-        freeze_weights(self.conv_block2)
-        freeze_weights(self.conv_block3)
-        freeze_weights(self.conv_block4)
-        freeze_weights(self.conv_block5)
-
-    def freeze_all_except_classifiers(self):
-        self.freeze_weights_extractor()
-        freeze_weights(self.fconv_block)

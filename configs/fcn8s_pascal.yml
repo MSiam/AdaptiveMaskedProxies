@@ -1,10 +1,5 @@
 model:
-    arch: dilated_fcn8s_highskip
-    lower_dim: True
-    weighted_mask: False
-    use_norm: False
-    offsetting: False
-    use_scale: False
+    arch: SIN
 data:
     dataset: pascal
     fold: 0

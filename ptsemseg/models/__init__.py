@@ -32,7 +32,7 @@ def get_model(model_dict, n_classes, version=None):
         model = model(n_classes=n_classes, **param_dict)
 
     elif name == "SIN":
-        model = model(n_classes=n_classes)
+        model = model(layers=[3, 4, 6, 3], n_classes=n_classes)
     return model
 
 
