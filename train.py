@@ -82,7 +82,7 @@ def train(cfg, writer, logger):
             n_classes=cfg['data']['n_classes'])
 
 
-    n_classes = t_loader.n_classes
+    n_classes = cfg['data']['n_classes']
     trainloader = data.DataLoader(t_loader,
                                   batch_size=cfg['training']['batch_size'],
                                   num_workers=cfg['training']['n_workers'],
