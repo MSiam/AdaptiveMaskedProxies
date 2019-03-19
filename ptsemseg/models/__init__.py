@@ -5,6 +5,7 @@ from ptsemseg.models.fcn import *
 from ptsemseg.models.vgg_osvos import *
 from ptsemseg.models.dilated_fcn import *
 from ptsemseg.models.dilated_fcn_highskip import *
+from ptsemseg.models.SIN import *
 
 def get_model(model_dict, n_classes, version=None):
     name = model_dict['arch']
@@ -30,6 +31,8 @@ def get_model(model_dict, n_classes, version=None):
     elif name == "osvos":
         model = model(n_classes=n_classes, **param_dict)
 
+    elif name == "SIN":
+        model = model(n_classes=n_classes)
     return model
 
 
@@ -40,6 +43,7 @@ def _get_model_instance(name):
             "dilated_fcn8s": dilated_fcn8s,
             "dilated_fcn8s_highskip": dilated_fcn8s_highskip,
             "osvos": OSVOS,
+            "SIN": SIN,
         }[name]
     except:
         raise("Model {} not available".format(name))
