@@ -34,7 +34,10 @@ class SIN(nn.Module):
         self.layer1 = self._make_layer(Bottleneck, 64, layers[0])
         self.layer2 = self._make_layer(Bottleneck, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(Bottleneck, 256, layers[2], stride=2)
-        self.score_channels = [1024, 512, 256]
+        self.score_channels = [512, 512, 256, 64]
+
+        self.proj = nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1)
+
         self.classifier = nn.Sequential(
             nn.ReLU(inplace=False),
             nn.Dropout2d(),
@@ -42,6 +45,7 @@ class SIN(nn.Module):
             )
         self.score_pool4 = nn.Conv2d(self.score_channels[1], self.n_classes, 1, bias=False)
         self.score_pool3 = nn.Conv2d(self.score_channels[2], self.n_classes, 1, bias=False)
+        self.score_pool2 = nn.Conv2d(self.score_channels[3], self.n_classes, 1, bias=False)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -107,15 +111,20 @@ class SIN(nn.Module):
         x4 = self.layer2(x3)
         x5 = self.layer3(x4)
 
-        score = self.classifier(x5)
+        proj = self.proj(x5)
+        score = self.classifier(proj)
+        score_pool2 = self.score_pool2(x2)
         score_pool3 = self.score_pool3(x3)
         score_pool4 = self.score_pool4(x4)
-
         score = F.upsample(score, score_pool4.size()[2:])
         score += score_pool4
 
         score = F.upsample(score, score_pool3.size()[2:])
         score += score_pool3
+
+        score = F.upsample(score, score_pool2.size()[2:])
+        score += score_pool2
+
 
         out = F.upsample(score, x.size()[2:])
 
