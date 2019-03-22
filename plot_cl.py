@@ -31,11 +31,11 @@ def parse_file(path):
 cl_paths = sorted(os.listdir(sys.argv[1]))
 
 mious_list = []
-styles = ['-b', '-.g', '-m', '-.r', '--c', '-*y']
+styles = ['-b', '-g', '-m', '-r', '-c', '-y']
 legends = ['Naive #1', 'Naive #10', 'Imprint 0.05', 'Imprint 0.2', 'Imprint 0.5', 'Imprint 0.9']
 for i in range(6):
     mious = parse_file(sys.argv[1]+cl_paths[i])
-    plt.plot(mious, styles[i])
+    plt.plot(mious, styles[i], marker='o')
 
 plt.xlabel('Encountered Tasks')
 plt.ylabel('mIoU')
