@@ -15,8 +15,10 @@ def parse_file(path):
         if 'Task' in line:
             taski = int(line.split(' ')[1])
             n_classes = (taski+1)*2
-        elif skip_lines < 15:
-            skip_lines += 1
+#        elif skip_lines < 15:
+#            skip_lines += 1
+#            continue
+        elif 'Mean' in line:
             continue
         else:
             ious.append(float(line.split(' ')[1]))

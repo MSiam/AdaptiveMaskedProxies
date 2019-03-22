@@ -161,16 +161,16 @@ def validate(cfg, args):
         cl_log.write('Task ' + str(taski) + '\n')
         _, class_iou = running_metrics.get_scores()
 
-        val_nclasses = model.n_classes + (taski+1)*2
         avg = 0.0
         count = 0
-        for i in range(model.n_classes, model.n_classes + (taski+1)*2):
+        for i in range(n_classes, n_classes + (taski+1)*2):
             print(i, class_iou[i])
             cl_log.write(str(i) + ' ' + str(class_iou[i])+'\n')
             avg += class_iou[i]
             count += 1
-        cl_log.write('Mean IoU of New Classes '+str(avg/count))
+        cl_log.write('Mean IoU of New Classes '+str(avg/count)+'\n')
         print('Mean IoU of New Classes '+str(avg/count))
+        cl_log.flush()
 
     cl_log.close()
 

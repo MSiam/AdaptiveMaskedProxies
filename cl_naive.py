@@ -186,7 +186,7 @@ def validate(cfg, args):
             cl_log.write(str(i) + ' ' + str(class_iou[i])+'\n')
             avg += class_iou[i]
             count += 1
-        cl_log.write('Mean IoU of New Classes '+str(avg/count))
+        cl_log.write('Mean IoU of New Classes '+str(avg/count)+'\n')
         print('Mean IoU of New Classes '+str(avg/count))
 
     cl_log.close()
