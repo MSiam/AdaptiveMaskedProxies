@@ -19,11 +19,11 @@ from ptsemseg.models.utils import freeze_weights, \
 
 # FCN 8s
 class fcn8s(nn.Module):
-    def __init__(self, n_classes=21, learned_billinear=False,
+    def __init__(self, n_classes=21, learned_bilinear=False,
                  use_norm=False, use_scale=False, lower_dim=True,
                  weighted_mask=False, offsetting=False, use_norm_weights=False):
         super(fcn8s, self).__init__()
-        self.learned_billinear = learned_billinear
+        self.learned_bilinear = learned_bilinear
         self.n_classes = n_classes
         self.loss = functools.partial(cross_entropy2d,
                                       size_average=False)
@@ -117,13 +117,9 @@ class fcn8s(nn.Module):
         self.score_pool4 = nn.Conv2d(512, self.n_classes, 1, bias=False)
         self.score_pool3 = nn.Conv2d(256, self.n_classes, 1, bias=False)
 
-        if self.learned_billinear:
-            self.upscore2 = nn.ConvTranspose2d(self.n_classes, self.n_classes, 4,
-                                               stride=2, bias=False)
-            self.upscore4 = nn.ConvTranspose2d(self.n_classes, self.n_classes, 4,
-                                               stride=2, bias=False)
-            self.upscore8 = nn.ConvTranspose2d(self.n_classes, self.n_classes, 16,
-                                               stride=8, bias=False)
+        if self.learned_bilinear:
+            self.upscore8 = nn.Conv2d(256, 256, 3, padding=1)
+            self.score_up8 = nn.Conv2d(256, self.n_classes, 1, bias=False)
 
         for m in self.modules():
             if isinstance(m, nn.ConvTranspose2d):
@@ -132,11 +128,6 @@ class fcn8s(nn.Module):
                                                           m.kernel_size[0]))
 
     def forward(self, x):
-#        if not self.training:
-#            if self.multires:
-#                print('MultiRes Classifier with Alpha = 0.5')
-#            else:
-#                print('Vanilla Classifier with Alpha = 0.05')
         conv1 = self.conv_block1(x)
         conv2 = self.conv_block2(conv1)
         conv3 = self.conv_block3(conv2)
@@ -149,20 +140,23 @@ class fcn8s(nn.Module):
         if self.use_scale:
             fconv = self.scale * fconv
 
+
         score = self.classifier(fconv)
+        if self.learned_bilinear:
+            score_pool4 = self.score_pool4(conv4)
+            score_pool3 = self.score_pool3(conv3)
+            score = F.upsample(score, score_pool4.size()[2:])
+            score += score_pool4
+            score = F.upsample(score, score_pool3.size()[2:])
+            score += score_pool3
 
-        if self.learned_billinear:
-            upscore2 = self.upscore2(score)
-            score_pool4c = self.score_pool4(conv4)[:, :, 5:5+upscore2.size()[2],
-                                                         5:5+upscore2.size()[3]]
-            upscore_pool4 = self.upscore4(upscore2 + score_pool4c)
+            out = F.upsample(score, x.size()[2:])
 
-            score_pool3c = self.score_pool3(conv3)[:, :, 9:9+upscore_pool4.size()[2],
-                                                         9:9+upscore_pool4.size()[3]]
+            fconv_up = F.upsample(fconv, x.size()[2:])
+            upscore8 = self.upscore8(fconv_up)
+            score_up8 = self.score_up8(upscore8)
+            out += score_up8
 
-            out = self.upscore8(score_pool3c + upscore_pool4)[:, :, 31:31+x.size()[2],
-                                                                    31:31+x.size()[3]]
-            return out.contiguous()
         else:
             if self.use_norm:
                 conv4 = l2_norm(conv4)
@@ -180,17 +174,7 @@ class fcn8s(nn.Module):
                 score = F.upsample(score, score_pool3.size()[2:])
                 score += score_pool3
 
-            if self.offsetting:
-                pad = 100
-                if not self.training:
-                    target_size = [s+pad*2 for s in x.size()[2:]]
-                    out = F.upsample(score, target_size)
-                    out = out[:, :, pad:-pad, pad:-pad]
-                else:
-                    target_size = [s+2*pad for s in x.size()[2:]]
-                    out = F.upsample(score, target_size)
-            else:
-                out = F.upsample(score, x.size()[2:])
+            out = F.upsample(score, x.size()[2:])
 
         return out
 
@@ -208,6 +192,8 @@ class fcn8s(nn.Module):
         conv4 = self.conv_block4(conv3)
         conv5 = self.conv_block5(conv4)
         fconv = self.fconv_block(conv5)
+        fconv_up = F.upsample(fconv, x.size()[2:])
+        upscore8 = self.upscore8(fconv_up)
 
         if self.use_norm_weights:
             fconv_norm = l2_norm(fconv)
@@ -232,8 +218,10 @@ class fcn8s(nn.Module):
                                              self.n_classes)
             conv4_pooled = masked_embeddings(conv4_norm.shape, label, conv4_norm,
                                              self.n_classes)
+            upscore8_pooled = masked_embeddings(upscore8.shape, label, upscore8,
+                                                self.n_classes)
 
-        return fconv_pooled, conv4_pooled, conv3_pooled
+        return fconv_pooled, conv4_pooled, conv3_pooled, upscore8_pooled
 
     def imprint(self, images, labels, alpha):
         with torch.no_grad():
