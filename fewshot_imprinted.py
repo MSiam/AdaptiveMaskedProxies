@@ -33,6 +33,13 @@ def save_images(sprt_image, sprt_label, qry_image, iteration, out_dir):
         cv2.imwrite(out_dir+'sprt_images/%05d_shot%01d.png'%(iteration,i) , sprt_image[i][0].numpy()[:, :, ::-1])
         cv2.imwrite(out_dir+'sprt_gt/%05d_shot%01d.png'%(iteration,i) , sprt_label[i][0].numpy())
 
+def save_multires(hmaps, iteration, out_dir):
+    multires = 0
+    for hmap in hmaps:
+        plt.imshow(hmap[0,-1,:,:]);plt.axis("off")
+        plt.savefig(out_dir+'multires/%05d_%03d.png'%(iteration, multires))
+        multires += 1
+
 def save_vis(heatmaps, prediction, groundtruth, iteration, out_dir, fg_class=16):
     pred = prediction[0]
     pred[pred != fg_class] = 0
@@ -72,6 +79,8 @@ def validate(cfg, args):
             os.mkdir(args.out_dir+'sprt_images')
         if not os.path.exists(args.out_dir+'sprt_gt'):
             os.mkdir(args.out_dir+'sprt_gt')
+        if not os.path.exists(args.out_dir+'multires'):
+            os.mkdir(args.out_dir+'multires')
 
     if args.fold != -1:
         cfg['data']['fold'] = args.fold
@@ -135,7 +144,7 @@ def validate(cfg, args):
         # 2- Infer on the query image
         model.eval()
         with torch.no_grad():
-            outputs = model(qry_images)
+            outputs, multires_heatmaps = model(qry_images)
             pred = outputs.data.max(1)[1].cpu().numpy()
 
         # Reverse the last imprinting (Few shot setting only not Continual Learning setup yet)
@@ -156,6 +165,7 @@ def validate(cfg, args):
         if args.out_dir != "":
             if args.binary:
                 save_vis(outputs, pred, gt, i, args.out_dir, fg_class=1)
+#                save_multires(multires_heatmaps, i, args.out_dir)
             else:
                 save_vis(outputs, pred, gt, i, args.out_dir)
 

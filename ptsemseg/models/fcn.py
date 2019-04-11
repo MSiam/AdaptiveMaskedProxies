@@ -175,6 +175,7 @@ class fcn8s(nn.Module):
             if self.multires:
                 score_pool4 = self.score_pool4(conv4)
                 score_pool3 = self.score_pool3(conv3)
+                multires_heatmaps = [score, score_pool4, score_pool3]
                 score = F.upsample(score, score_pool4.size()[2:])
                 score += score_pool4
                 score = F.upsample(score, score_pool3.size()[2:])
@@ -192,7 +193,7 @@ class fcn8s(nn.Module):
             else:
                 out = F.upsample(score, x.size()[2:])
 
-        return out
+        return out, multires_heatmaps
 
     def ensemble_classify(self, preds):
         for i in range(preds[0].shape[1]):
