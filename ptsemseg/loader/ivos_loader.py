@@ -32,53 +32,57 @@ class IVOSLoader(data.Dataset):
 
         self.transformations = ['Translation', 'Scale', 'Rotation']
         self.classes = ['bowl', 'bottle', 'mug']
+        self.cls_lbls = [[7, 8, 9, 10, 11] , [3, 4, 5, 6] , [12, 13, 14, 15, 16, 17, 18]]
 
         # create paths files returns dictionary
         # key : transformation, value : dictionary K:category,V:paths
-        self.files_path = self.parse_paths()
+        self.files_path, self.tasks_paths = self.parse_paths()
 
         # Create support and query pairs randomly sampled
         self.pairs = self.create_pairs(self.rand_gen, self.split,
-                                       self.files_path)
+                                       self.files_path, self.tasks_paths)
         self.tf = transforms.Compose([transforms.ToTensor(),
                                       transforms.Normalize([0.485, 0.456, 0.406],
                                                            [0.229, 0.224, 0.225])])
 
 
-    def create_pairs(self, rand_gen, split, paths):
+    def create_pairs(self, rand_gen, split, paths, tsks_paths):
         pairs = []
 
         for i in range(self.nsamples):
             # shuffle categories
-            rand_gen.shuffle(self.classes)
+            temp_classes = self.classes.copy()
+            rand_gen.shuffle(temp_classes)
 
             # Pick randomly transformation
-            rand_gen.shuffle(self.transformations)
-            rnd_transf = self.transformations[0]
+            temp_transformations = self.transformations.copy()
+            rand_gen.shuffle(temp_transformations)
+            rnd_transf = temp_transformations[0]
 
             support = []
+            support_classes = []
             query = []
-            for cls in self.classes:
-                if split == 'same_trans':
-                    # Pick randomly support set poses
-                    rand_gen.shuffle(paths[rnd_transf][cls])
-                    support.append(paths[rnd_transf][cls][:self.kshot])
+            for cls in temp_classes:
+                # Pick randomly support set poses
+                rand_gen.shuffle(paths[rnd_transf][cls])
+                support.append(paths[rnd_transf][cls][:self.kshot])
+                support_classes.append(self.classes.index(cls))
 
+                if split == 'same_trans':
                     # Pick query set poses
                     query.append(paths[rnd_transf][cls][self.kshot:])
 
                 elif split == 'cross_trans':
-                    # Pick randomly support set poses
-                    rand_gen.shuffle(paths[rnd_transf][cls])
-                    support.append(paths[rnd_transf][cls][:self.kshot])
-
                     # Pick query set poses
-                    cross_transf = self.transformations[1]
+                    cross_transf = temp_transformations[1]
                     query.append(paths[cross_transf][cls])
-                else:
-                    support = None; query = None
 
-            pairs.append((support, query))
+                elif split == 'cross_domain':
+                    # Pick query set poses
+                    rand_gen.shuffle(tsks_paths[temp_classes.index(cls)])
+                    query.append(tsks_paths[self.classes.index(cls)])
+
+            pairs.append((support, support_classes, query))
         return pairs
 
     def parse_paths(self):
@@ -97,14 +101,47 @@ class IVOSLoader(data.Dataset):
 
                     current_path = transf_path + d
 
-                    for f in os.listdir(current_path):
+                    for f in sorted(os.listdir(current_path)):
                         category_paths[d[:-1]].append(current_path + '/' + f)
 
             paths[transf] = category_paths
 
-        return paths
+        if self.split == 'cross_domain':
+            tasks_paths = []
+            for i in range(len(self.classes)):
+                tasks_paths.append([])
 
-    def transform(self, img, lbl, cls_idx):
+            tasks_pth = self.root + 'Tasks/'
+            for m_task in sorted(os.listdir(tasks_pth)):
+                for task in sorted(os.listdir(tasks_pth + m_task + '/Images/')):
+                    tsk_pth = tasks_pth + m_task + '/Images/' + task
+
+                    for f in sorted(os.listdir(tsk_pth)):
+                        lbl = cv2.imread(tsk_pth.replace('Images', 'Masks_Semantic') + '/' + f, 0)
+                        for i in range(len(self.classes)):
+                            if self.exists(self.cls_lbls[i], lbl):
+                                tasks_paths[i].append(tsk_pth + '/' + f)
+        else:
+            tasks_paths = None
+
+        return paths, tasks_paths
+
+    def exists(self, classes, lbl):
+        for c in classes:
+            if c in lbl:
+                return True
+        return False
+
+    def convert_labels(self, lbl):
+        temp_lbl = lbl.copy()
+        for idx, cls_lbl in enumerate(self.cls_lbls):
+            for cls in cls_lbl:
+                if cls in lbl:
+                    temp_lbl[lbl==cls] = idx + 1
+        temp_lbl[temp_lbl > (len(self.classes)+1)] = 0
+        return temp_lbl
+
+    def transform(self, img, lbl, cls_idx=-1):
         if self.img_size == ('same', 'same'):
             pass
         elif hasattr(img, 'dtype'):
@@ -115,12 +152,16 @@ class IVOSLoader(data.Dataset):
             lbl = lbl.resize((self.img_size[0], self.img_size[1]))
 
         img = self.tf(img)
+        if self.split == 'cross_domain' and cls_idx == -1:
+            lbl = self.convert_labels(lbl)
+        else:
+            lbl[lbl == 255] = cls_idx
+
         lbl = torch.from_numpy(np.array(lbl)).long()
-        lbl[lbl == 255] = cls_idx
         return img, lbl
 
 
-    def read_imgs_lbls(self, current_set):
+    def read_imgs_lbls(self, current_set, current_classes, sprt=False):
 
         all_imgs = []
         all_lbls = []
@@ -132,11 +173,19 @@ class IVOSLoader(data.Dataset):
                 img_path = current_set[i][j]
                 img = cv2.imread(img_path)
 
-                lbl_path = img_path.replace('Images', 'Masks')
+                if self.split == 'cross_domain' and not sprt:
+                    lbl_path = img_path.replace('Images', 'Masks_Semantic')
+                else:
+                    lbl_path = img_path.replace('Images', 'Masks')
                 lbl = cv2.imread(lbl_path, 0)
 
+                if self.split == 'cross_domain' and not sprt:
+                    cls_idx = -1
+                else:
+                    cls_idx = current_classes[i] + 1
+
                 if self.is_transform:
-                    img, lbl = self.transform(img, lbl, i+1)
+                    img, lbl = self.transform(img, lbl, cls_idx)
 
                 imgs.append(img)
                 lbls.append(lbl)
@@ -147,10 +196,10 @@ class IVOSLoader(data.Dataset):
         return all_imgs, all_lbls
 
     def __getitem__(self, index):
-        support, query = self.pairs[index]
+        support, classes, query = self.pairs[index]
 
-        sprt_imgs, sprt_lbls = self.read_imgs_lbls(support)
-        qry_imgs, qry_lbls = self.read_imgs_lbls(query)
+        sprt_imgs, sprt_lbls = self.read_imgs_lbls(support, classes, sprt=True)
+        qry_imgs, qry_lbls = self.read_imgs_lbls(query, classes)
 
         return sprt_imgs, sprt_lbls, qry_imgs, qry_lbls
 
