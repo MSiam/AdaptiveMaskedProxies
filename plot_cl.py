@@ -37,6 +37,7 @@ for i in range(6):
     mious = parse_file(sys.argv[1]+cl_paths[i])
     plt.plot(mious, styles[i], marker='o')
 
+plt.xticks(range(6))
 plt.xlabel('Encountered Tasks')
 plt.ylabel('mIoU')
 plt.legend(legends)
