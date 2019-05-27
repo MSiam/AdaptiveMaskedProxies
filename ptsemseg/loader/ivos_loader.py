@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import random
+import scipy.misc
 
 class IVOSLoader(data.Dataset):
     '''
@@ -113,11 +114,16 @@ class IVOSLoader(data.Dataset):
 
             tasks_pth = self.root + 'Tasks/'
             for m_task in sorted(os.listdir(tasks_pth)):
+                if len(m_task.split('.')) > 1:
+                    continue
+
                 for task in sorted(os.listdir(tasks_pth + m_task + '/Images/')):
                     tsk_pth = tasks_pth + m_task + '/Images/' + task
 
                     for f in sorted(os.listdir(tsk_pth)):
-                        lbl = cv2.imread(tsk_pth.replace('Images', 'Masks_Semantic') + '/' + f, 0)
+                        temp_tsk_pth = tsk_pth.replace('Images', 'Masks_Semantic')
+                        lbl = cv2.imread(temp_tsk_pth + '/' + f.replace('jpg', 'png'), 0)
+
                         for i in range(len(self.classes)):
                             if self.exists(self.cls_lbls[i], lbl):
                                 tasks_paths[i].append(tsk_pth + '/' + f)
@@ -175,9 +181,11 @@ class IVOSLoader(data.Dataset):
 
                 if self.split == 'cross_domain' and not sprt:
                     lbl_path = img_path.replace('Images', 'Masks_Semantic')
+                    lbl_path = lbl_path.replace('jpg', 'png')
                 else:
                     lbl_path = img_path.replace('Images', 'Masks')
-                lbl = cv2.imread(lbl_path, 0)
+                print(lbl_path)
+                lbl = np.asarray(cv2.imread(lbl_path, 0))
 
                 if self.split == 'cross_domain' and not sprt:
                     cls_idx = -1
@@ -205,7 +213,7 @@ class IVOSLoader(data.Dataset):
 
 if __name__ == "__main__":
     # Testing the ivos loader
-    loader = IVOSLoader('/home/menna/Datasets/IVOS_dataset/', split='same_trans')
+    loader = IVOSLoader('/home/menna/Datasets/IVOS_dataset/', split='cross_domain')
 
     for sprt_imgs, sprt_lbls, qry_imgs, qry_lbls in loader:
         plt.figure(0); plt.imshow(np.transpose(sprt_imgs[0][0], (1,2,0)))
