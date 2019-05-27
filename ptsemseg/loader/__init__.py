@@ -2,6 +2,7 @@ import json
 
 from ptsemseg.loader.pascal_voc_loader import pascalVOCLoader
 from ptsemseg.loader.pascal_voc_5i_loader import pascalVOC5iLoader
+from ptsemseg.loader.ivos_loader import IVOSLoader
 
 def get_loader(name):
     """get_loader
@@ -11,6 +12,7 @@ def get_loader(name):
     return {
         "pascal": pascalVOCLoader,
         "pascal5i": pascalVOC5iLoader,
+        "ivos": IVOSLoader,
     }[name]
 
 
