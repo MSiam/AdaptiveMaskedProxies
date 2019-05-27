@@ -3,6 +3,8 @@
 
 ## Environment setup
 
+Current Code is tested on torch 0.4.0 and torchvision 0.2.0. 
+
 ```
 virtualenv --system-site-packages -p python3 ./venv
 source venv/bin/activate
