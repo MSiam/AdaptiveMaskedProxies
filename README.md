@@ -8,7 +8,7 @@ Implementation used in our paper:
 Deep learning has thrived by training on large-scale datasets. However, for continual learning in applications such as robotics, it is critical to incrementally update its model in a sample efficient manner. We propose a novel method that constructs the new class weights from few labelled samples in the support set without back-propagation, relying on our adaptive masked proxies approach. It utilizes multi-resolution average pooling on the output embeddings masked with the label to act as a positive proxy for the new class, while fusing it with the previously learned class signatures. Our proposed method is evaluated on PASCAL-5i dataset and outperforms the state of the art in the 5-shot semantic segmentation. Unlike previous methods, our proposed approach does not require a second branch to estimate parameters or prototypes, which enables it to be used with 2-stream motion and appearance based segmentation networks. The proposed adaptive proxies allow the method to be used with a continuous data stream. Our online adaptation scheme is evaluated on the DAVIS and FBMS video object segmentation benchmark. We further propose a novel setup for evaluating continual learning of object segmentation which we name incremental PASCAL (iPASCAL) where our method has shown to outperform the baseline method.
 
 <div align="center">
-<img src="https://github.com/MSiam/AdaptiveMaskedProxies/blob/master/figures/fig.png" width="70%" height="70%"><br><br>
+<img src="https://github.com/MSiam/AdaptiveMaskedProxies/blob/master/figures/adapproxy.png" width="70%" height="70%"><br><br>
 </div>
 
 ## Environment setup
