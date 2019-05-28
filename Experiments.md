@@ -41,3 +41,7 @@ Use weights in path: runs/reddilatedfcn8s_pascal/
 ## Reproducing iPASCAL results 
 
 Coming soon ...
+
+## Running Hyperparameter Search
+
+Coming soon ...
