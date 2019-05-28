@@ -44,4 +44,9 @@ Coming soon ...
 
 ## Running Hyperparameter Search
 
-Coming soon ...
+Based on Tune, follow the instructions for installation [here](https://ray.readthedocs.io/en/latest/tune.html)
+```
+git checkout hyperopt
+python hyperparam_search.py --config CONFIG_FILE --model_path PATH --binary BINARY_FLAG
+```
+
