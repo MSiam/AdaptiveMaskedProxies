@@ -63,9 +63,10 @@ python vis_preds.py VIS_FOLDER
 ## Guide to Reproducing Experiments in the paper
 Check [Experiments.md](https://github.com/MSiam/AdaptiveMaskedImprinting/blob/master/Experiments.md)
 
-Based on semantic segmentation repo:
+## Related Repos:
+* Based on semantic segmentation repo:
 [SemSeg](https://github.com/meetshah1995/pytorch-semseg)
-Pascal5i loader based on OSLSM repo loader:
+* Pascal5i loader based on OSLSM repo loader:
 [OSLSM](https://github.com/lzzcd001/OSLSM)
 
 ## References
