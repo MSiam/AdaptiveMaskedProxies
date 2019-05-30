@@ -65,4 +65,27 @@ Check [Experiments.md](https://github.com/MSiam/AdaptiveMaskedImprinting/blob/ma
 
 Based on semantic segmentation repo:
 [SemSeg](https://github.com/meetshah1995/pytorch-semseg)
+Pascal5i loader based on OSLSM repo loader:
+[OSLSM](https://github.com/lzzcd001/OSLSM)
+
+## References
+
+Please cite our paper if you find it useful in your research
+
+```
+@article{DBLP:journals/corr/abs-1902-11123,
+  author    = {Mennatullah Siam and
+               Boris N. Oreshkin},
+  title     = {Adaptive Masked Weight Imprinting for Few-Shot Segmentation},
+  journal   = {CoRR},
+  volume    = {abs/1902.11123},
+  year      = {2019},
+  url       = {http://arxiv.org/abs/1902.11123},
+  archivePrefix = {arXiv},
+  eprint    = {1902.11123},
+  timestamp = {Tue, 21 May 2019 18:03:37 +0200},
+  biburl    = {https://dblp.org/rec/bib/journals/corr/abs-1902-11123},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+```
 
