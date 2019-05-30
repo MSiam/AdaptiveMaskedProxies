@@ -4,6 +4,7 @@
 * Download [SBD dataset](http://home.bharathh.info/pubs/codes/SBD/download.html) + Use [train.txt](http://home.bharathh.info/pubs/codes/SBD/train_noval.txt) provided by SBD instead of PASCAL.
 * Modify config.json path to your SBD_PATH
 * In all Experiments modify in the config files "path" to the PASCAL_VOC_PATH
+* Note there are issues in reproducing the same results on higher versions of torch and torchvision. So please use the same setup we used for our experiments. (torch 0.4.0, torchvision 0.2.0)
 
 ## Reproducing experiments in Table 1 with finetuning
 
