@@ -184,7 +184,8 @@ def validate(cfg, args):
         for i in range(model.n_classes, model.n_classes + (taski+1)*2):
             print(i, class_iou[i])
             cl_log.write(str(i) + ' ' + str(class_iou[i])+'\n')
-            avg += class_iou[i]
+            if not np.isnan(class_iou[i]):
+                avg += class_iou[i]
             count += 1
         cl_log.write('Mean IoU of New Classes '+str(avg/count)+'\n')
         print('Mean IoU of New Classes '+str(avg/count))

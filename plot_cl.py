@@ -23,7 +23,7 @@ def parse_file(path):
         else:
             ious.append(float(line.split(' ')[1]))
             if len(ious) == n_classes:
-                mious.append(np.mean(np.array(ious)))
+                mious.append(np.nanmean(np.array(ious)))
                 ious = []
                 skip_lines = 0
     return mious
@@ -35,9 +35,9 @@ styles = ['-b', '-g', '-m', '-r', '-c', '-y']
 legends = ['Naive #1', 'Naive #10', 'Imprint 0.05', 'Imprint 0.2', 'Imprint 0.5', 'Imprint 0.9']
 for i in range(6):
     mious = parse_file(sys.argv[1]+cl_paths[i])
-    plt.plot(mious, styles[i], marker='o')
+    plt.plot(list(range(1,6)), mious, styles[i], marker='o')
 
-plt.xticks(range(6))
+plt.xticks(range(1,6))
 plt.xlabel('Encountered Tasks')
 plt.ylabel('mIoU')
 plt.legend(legends)

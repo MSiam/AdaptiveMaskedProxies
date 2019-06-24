@@ -22,7 +22,7 @@ training:
     print_interval: 50
     optimizer:
         name: 'rmsprop'
-        lr: 1.0e-10
+        lr: 9.0959e-05
         weight_decay: 0.0005
 #        momentum: 0.99
     loss:
