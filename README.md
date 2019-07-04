@@ -70,8 +70,9 @@ pip install -r requirements.txt
 
 Download trained weights [here](https://drive.google.com/drive/folders/1wJXetJCGkT_xej8Jr8Mrj9vJUHN8EtJu?usp=sharing)
 
-## Python Notebook
-[Demo](https://colab.research.google.com/drive/1yuUg6RuBGf2Z0AKMQRl2FwiSfs9UdSaS#scrollTo=H3aduD_aqlmv)
+## Python Notebook Demo
+To use with google Colab upload notebook with the following url
+[Demo](https://github.com/MSiam/AdaptiveMaskedProxies/blob/master/AdapProxy.ipynb)
 
 ## Train on Large Scale Data
 
