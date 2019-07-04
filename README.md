@@ -20,25 +20,25 @@ Deep learning has thrived by training on large-scale datasets. However, for cont
 1-way 1-shot segmentation
  <div class="row">
   <div class="column">
-    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/pred_1.png" alt="" style="width:100%">
+    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/pred_1.png" alt="" style="width:30%">
   </div>
   <div class="column">
-    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/pred_3.png" alt="" style="width:100%">
+    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/pred_3.png" alt="" style="width:30%">
   </div>
   <div class="column">
-    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/pred_6.png" alt="" style="width:100%">
+    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/pred_6.png" alt="" style="width:30%">
   </div>
 </div> 
 
 <div class="row">
   <div class="column">
-    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/sprt_1.png" alt="" style="width:100%">
+    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/sprt_1.png" alt="" style="width:30%">
   </div>
   <div class="column">
-    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/sprt_6.png" alt="" style="width:100%">
+    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/sprt_6.png" alt="" style="width:30%">
   </div>
   <div class="column">
-    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/sprt_3.png" alt="" style="width:100%">
+    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/sprt_3.png" alt="" style="width:30%">
   </div>
 </div> 
 
