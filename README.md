@@ -45,6 +45,11 @@ Deep learning has thrived by training on large-scale datasets. However, for cont
    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/lfw_sprt_gt3.png" alt="" width="20%" height="20%">
   </div>
  <div class="column">
+ <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/lfw_img1.png" alt="" width="20%" height="20%">
+    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/lfw_img2.png" alt="" width="20%" height="20%">
+   <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/lfw_img3.png" alt="" width="20%" height="20%">
+  </div>
+ <div class="column">
  <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/lfw_pred_img1.png" alt="" width="20%" height="20%">
     <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/lfw_pred_img2.png" alt="" width="20%" height="20%">
    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/lfw_pred_img3.png" alt="" width="20%" height="20%">
