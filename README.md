@@ -20,28 +20,18 @@ Deep learning has thrived by training on large-scale datasets. However, for cont
 1-way 1-shot segmentation
  <div class="row">
   <div class="column">
-    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/pred_1.png" alt="" width="10%" height="10%">
+    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/pred_1.png" alt="" width="30%" height="30%">
+       <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/sprt_1.png" alt="" width="30%" height="30%">
   </div>
   <div class="column">
-    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/pred_3.png" alt="" width="10%" height="10%">
+    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/pred_3.png" alt="" width="30%" height="30%">
+   <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/sprt_6.png" alt="" width="30%" height="30%">
   </div>
   <div class="column">
-    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/pred_6.png" alt="" width="10%" height="10%">
+    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/pred_6.png" alt="" width="30%" height="30%">
+    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/sprt_3.png" alt="" width="30%" height="30%">
   </div>
 </div> 
-
-<div class="row">
-  <div class="column">
-    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/sprt_1.png" alt="" style="width:10%">
-  </div>
-  <div class="column">
-    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/sprt_6.png" alt="" style="width:10%">
-  </div>
-  <div class="column">
-    <img src="https://raw.githubusercontent.com/MSiam/AdaptiveMaskedProxies/master/figures/sprt_3.png" alt="" style="width:10%">
-  </div>
-</div> 
-
 
 ##Qualitative Evaluation on LfW
 2-way 1-shot segmentation
