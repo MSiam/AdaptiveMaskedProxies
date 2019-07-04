@@ -16,6 +16,36 @@ Deep learning has thrived by training on large-scale datasets. However, for cont
 <img src="https://github.com/MSiam/AdaptiveMaskedProxies/blob/master/figures/adapproxy.png" width="70%" height="70%"><br><br>
 </div>
 
+## Qualitative Evaluation on PASCAL-5i
+1-way 1-shot segmentation
+ <div class="row">
+  <div class="column">
+    <img src="pred_1.png" alt="" style="width:100%">
+  </div>
+  <div class="column">
+    <img src="pred_6.png" alt="" style="width:100%">
+  </div>
+  <div class="column">
+    <img src="pred_3.png" alt="" style="width:100%">
+  </div>
+</div> 
+
+<div class="row">
+  <div class="column">
+    <img src="pred_1.png" alt="" style="width:100%">
+  </div>
+  <div class="column">
+    <img src="pred_6.png" alt="" style="width:100%">
+  </div>
+  <div class="column">
+    <img src="pred_3.png" alt="" style="width:100%">
+  </div>
+</div> 
+
+
+##Qualitative Evaluation on LfW
+2-way 1-shot segmentation
+
 ## Environment setup
 
 Current Code is tested on torch 0.4.0 and torchvision 0.2.0. 
@@ -29,6 +59,9 @@ pip install -r requirements.txt
 ## Pre-Trained Weights
 
 Download trained weights [here](https://drive.google.com/drive/folders/1wJXetJCGkT_xej8Jr8Mrj9vJUHN8EtJu?usp=sharing)
+
+## Python Notebook
+[Demo](https://colab.research.google.com/drive/1yuUg6RuBGf2Z0AKMQRl2FwiSfs9UdSaS#scrollTo=H3aduD_aqlmv)
 
 ## Train on Large Scale Data
 
