@@ -8,14 +8,14 @@ model:
     use_scale: False
 data:
     dataset: pascal5i
-    fold: 0
+    fold: 1
     n_classes: 16
     k_shot: 1
     train_split: train_aug
     val_split: val
     img_rows: 500
     img_cols: 500
-    path: /home/Data/VOCdevkit/VOC2012/
+    path: /home/menna/Datasets/VOCdevkit/VOC2012/
 training:
     train_iters: 15
     batch_size: 1

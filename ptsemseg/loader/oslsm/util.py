@@ -473,14 +473,14 @@ class VideoPlayer:
 
     def get_frame(self, frame_id, compute_iflow = False):
         if self.cache.has_key(frame_id):
-            img, mask, obj_size = self.cache[frame_id]
+            img, mask, obj_size, cls_ind = self.cache[frame_id]
             assert(np.all(img >= 0) and np.all(img <= 1.0))
         else:
             img_id = self.img_ids[frame_id]
             img = self.video_item.read_img(img_id)
             #assert(np.all(img >= 0) and np.all(img <= 1.0))
             try:
-                mask = self.video_item.read_mask(img_id)
+                mask, cls_ind = self.video_item.read_mask(img_id)
                 obj_size = np.array(BBox.get_bbox(mask).size())
             except IOError:
                 cprint('Failed to load mask \'' + str(img_id) + '\' for video \'' + self.name + '\'. Return None mask..', bcolors.FAIL)
@@ -492,7 +492,7 @@ class VideoPlayer:
 #                if mask is not None:
 #                    mask  = self.mappings[frame_id].transform_mask(mask.copy(), obj_size, mask.shape)[0]
 #                    mask[mask == -1] = 0
-            self.cache[frame_id] = (img, mask, obj_size)
+            self.cache[frame_id] = (img, mask, obj_size, cls_ind)
         output = dict(image=img, mask=mask)
 
         if compute_iflow:
@@ -510,6 +510,7 @@ class VideoPlayer:
             assert output['mask'].shape[0] == output['image'].shape[0] and output['mask'].shape[1] == output['image'].shape[1]
         if 'iflow' in output.keys():
             assert output['iflow'].shape[0] == output['image'].shape[0] and output['iflow'].shape[1] == output['image'].shape[1]
+        output['cls_ind'] = cls_ind
         return output
 
 class ImagePlayer:
@@ -907,13 +908,16 @@ class DBPascalItem(DBImageItem):
         encoded_mask_path = self.mask_path.replace('SegmentationClass/', 'SegmentationClass/pre_encoded/')
         mobj_uint = np.array(Image.open(encoded_mask_path))
 
+        cls_ind = -1
         if self.binary:
             m = np.zeros(mobj_uint.shape, dtype=np.float32)
             for obj_id in self.obj_ids:
+                if obj_id in mobj_uint:
+                    cls_ind = obj_id
                 m[mobj_uint == obj_id] = self.ids_map[obj_id]
         else:
             m = self.filter_seg(mobj_uint)
-        return m
+        return m, cls_ind
 
     def read_img(self):
         print(self.img_path)

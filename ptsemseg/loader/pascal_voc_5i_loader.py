@@ -101,7 +101,7 @@ class pascalVOC5iLoader(pascalVOCLoader):
             if self.is_transform:
                 im1[j], lbl1[j] = self.transform(im1[j], lbl1[j])
 
-        return im1, lbl1, im2, lbl2, original_im1, original_im2
+        return im1, lbl1, im2, lbl2, original_im1, original_im2, self.out['cls_ind']
 
     def correct_im(self, im):
         im = (np.transpose(im, (0,2,3,1)))/255.
