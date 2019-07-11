@@ -8,12 +8,12 @@ model:
 data:
     dataset: ade20k
     fold: 0
-    n_classes: 16
+    n_classes: 146
     train_split: training
     val_split: validation
     img_rows: 512
     img_cols: 512
-    path: /home/menna/Datasets/ADE20k/
+    path: /home/menna/Datasets/ADEChallengeData2016/
 training:
     train_iters: 300000
     batch_size: 1

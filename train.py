@@ -54,7 +54,7 @@ def train(cfg, writer, logger):
         data_path,
         is_transform=True,
         split=cfg['data']['train_split'],
-        img_size=(cfg['data']['img_rows'], cfg['data']['img_cols']),
+        img_size=[cfg['data']['img_rows'], cfg['data']['img_cols']],
         augmentations=data_aug,
         fold=cfg['data']['fold'],
         n_classes=cfg['data']['n_classes'])
@@ -63,7 +63,7 @@ def train(cfg, writer, logger):
         data_path,
         is_transform=True,
         split=cfg['data']['val_split'],
-        img_size=(cfg['data']['img_rows'], cfg['data']['img_cols']),
+        img_size=[cfg['data']['img_rows'], cfg['data']['img_cols']],
         fold=cfg['data']['fold'],
         n_classes=cfg['data']['n_classes'])
 

@@ -7,8 +7,7 @@ import matplotlib.pyplot as plt
 
 from torch.utils import data
 
-#from ptsemseg.utils import recursive_glob
-from utils import recursive_glob
+from ptsemseg.utils import recursive_glob
 import scipy.io
 
 class ADE20KLoader(data.Dataset):
@@ -21,7 +20,7 @@ class ADE20KLoader(data.Dataset):
         augmentations=None,
         img_norm=True,
         test_mode=False,
-        n_classes=150,
+        n_classes=151,
         fold=None
     ):
         self.root = root
@@ -33,7 +32,10 @@ class ADE20KLoader(data.Dataset):
         self.n_classes = n_classes
         self.fold = fold
 
-        self.img_size = img_size if isinstance(img_size, tuple) else (img_size, img_size)
+        ignore_dict = {0: [91, 128, 127, 77, 99], 1:[], 2:[], 3:[]}
+        self.ignore_classes = ignore_dict[self.fold]
+
+        self.img_size = img_size if isinstance(img_size, list) else (img_size, img_size)
         self.mean = np.array([104.00699, 116.66877, 122.67892])
         self.files = collections.defaultdict(list)
         self.class_names = self.parse_classes(self.root+'classes.txt')
@@ -46,10 +48,14 @@ class ADE20KLoader(data.Dataset):
                 self.files[split] = file_list
 
     def parse_classes(self, pth):
-        classes = [None]
+        classes = ['Background']
         f = open(pth, 'r')
+        count = 0
         for line in f:
-            classes.append(line.strip())
+            if count == 0:
+                count += 1
+                continue
+            classes.append(line.split(',')[-1].strip())
         return classes
 
     def __len__(self):
@@ -57,11 +63,11 @@ class ADE20KLoader(data.Dataset):
 
     def __getitem__(self, index):
         img_path = self.files[self.split][index].rstrip()
-        lbl_path = img_path[:-4] + "_seg.png"
+        lbl_path = img_path.replace("jpg", "png")
+        lbl_path = lbl_path.replace("images", "annotations")
 
         img = m.imread(img_path)
         img = np.array(img, dtype=np.uint8)
-        print('Reading label ', lbl_path)
         lbl = m.imread(lbl_path)
         lbl = np.array(lbl, dtype=np.int32)
 
@@ -75,7 +81,14 @@ class ADE20KLoader(data.Dataset):
 
     def transform(self, img, lbl):
         if self.img_size[0] != 'same':
-            img = m.imresize(img, (self.img_size[0], self.img_size[1]))  # uint8 with RGB mode
+            if img.shape[0] != img.shape[1]:
+                # preserve aspect ratio
+                preserve_aspect_ratio = True
+                img = self.resize_preserving_aspect(img)
+            else:
+                preserve_aspect_ratio = False
+                img = m.imresize(img, (self.img_size[0], self.img_size[1]))  # uint8 with RGB mode
+
         img = img[:, :, ::-1]  # RGB -> BGR
         img = img.astype(np.float64)
         img -= self.mean
@@ -86,17 +99,53 @@ class ADE20KLoader(data.Dataset):
         # NHWC -> NCHW
         img = img.transpose(2, 0, 1)
 
-        lbl = self.encode_segmap(lbl)
+        #lbl = self.encode_segmap(lbl)
+        lbl = self.filter_seg(lbl)
         classes = np.unique(lbl)
         lbl = lbl.astype(float)
         if self.img_size[0] != 'same':
-            lbl = m.imresize(lbl, (self.img_size[0], self.img_size[1]), "nearest", mode="F")
+            if preserve_aspect_ratio:
+                lbl = self.resize_preserving_aspect(lbl, lbl_flag=True)
+                classes = np.unique(lbl)
+            else:
+                lbl = m.imresize(lbl, (self.img_size[0], self.img_size[1]), "nearest", mode="F")
         lbl = lbl.astype(int)
         assert np.all(classes == np.unique(lbl))
 
         img = torch.from_numpy(img).float()
         lbl = torch.from_numpy(lbl).long()
         return img, lbl
+
+    def resize_preserving_aspect(self, x, lbl_flag=False):
+        if x.shape[0] < x.shape[1]:
+            img_ht = int(x.shape[1] * self.img_size[0]/x.shape[0])
+            if lbl_flag:
+                x = m.imresize(x, (self.img_size[0], img_ht), "nearest", mode="F")
+            else:
+                x = m.imresize(x, (self.img_size[0], img_ht))  # uint8 with RGB mode
+            x = x[:self.img_size[0], :self.img_size[0]]
+        else:
+            img_wd = int(x.shape[0] * self.img_size[1]/x.shape[1])
+            if lbl_flag:
+                x = m.imresize(x, (img_wd, self.img_size[1]), "nearest", mode="F")
+            else:
+                x = m.imresize(x, (img_wd, self.img_size[1]))  # uint8 with RGB mode
+            x = x[:self.img_size[1], :self.img_size[1]]
+        return x
+
+    def filter_seg(self, label_mask):
+        if self.fold is not None: # Some classes are ignored for OSLSM Training
+            class_count = 0
+            for c in range(151):
+                if c in self.ignore_classes:
+                    label_mask[label_mask == c] = 250
+                else:
+                    label_mask[label_mask == c] = class_count
+                    class_count += 1
+
+            if label_mask[label_mask!=250].sum() == 0: # Images with only background and ignored arent used
+                label_mask[label_mask != 250] = 250
+        return label_mask
 
     def encode_segmap(self, mask):
         # Refer : http://groups.csail.mit.edu/vision/datasets/ADE20K/code/loadAde20K.m
@@ -128,18 +177,16 @@ class ADE20KLoader(data.Dataset):
 
 
 if __name__ == "__main__":
-    local_path = "/home/menna/Datasets/ADE20k/"
-    dst = ADE20KLoader(local_path, is_transform=True)
-    trainloader = data.DataLoader(dst, batch_size=4)
+    local_path = "/home/menna/Datasets/ADEChallengeData2016/"
+    dst = ADE20KLoader(local_path, is_transform=True, fold=0, img_size=[512,512])
+    trainloader = data.DataLoader(dst, batch_size=4, num_workers=0)
     for i, data_samples in enumerate(trainloader):
         imgs, labels = data_samples
-        if i == 0:
-            img = torchvision.utils.make_grid(imgs).numpy()
-            img = np.transpose(img, (1, 2, 0))
-            img = img[:, :, ::-1]
-            plt.imshow(img)
-            plt.show()
-            for j in range(4):
-                plt.imshow(labels.numpy()[j])
-                plt.show()
-                import pdb; pdb.set_trace()
+        img = torchvision.utils.make_grid(imgs).numpy()
+        img = np.transpose(img, (1, 2, 0))
+        img = img[:, :, ::-1]
+        plt.imshow(img)
+        plt.show()
+        #    for j in range(4):
+        #        plt.imshow(labels.numpy()[j])
+        #        plt.show()
