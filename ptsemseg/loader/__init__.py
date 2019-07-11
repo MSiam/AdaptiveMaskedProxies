@@ -3,6 +3,7 @@ import json
 from ptsemseg.loader.pascal_voc_loader import pascalVOCLoader
 from ptsemseg.loader.pascal_voc_5i_loader import pascalVOC5iLoader
 from ptsemseg.loader.ivos_loader import IVOSLoader
+from ptsemseg.loader.ade20k_loader import ADE20KLoader
 
 def get_loader(name):
     """get_loader
@@ -13,6 +14,7 @@ def get_loader(name):
         "pascal": pascalVOCLoader,
         "pascal5i": pascalVOC5iLoader,
         "ivos": IVOSLoader,
+        "ade20k": ADE20KLoader,
     }[name]
 
 

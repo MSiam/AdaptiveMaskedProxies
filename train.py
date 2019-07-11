@@ -70,12 +70,12 @@ def train(cfg, writer, logger):
     n_classes = t_loader.n_classes
     trainloader = data.DataLoader(t_loader,
                                   batch_size=cfg['training']['batch_size'],
-                                  num_workers=cfg['training']['n_workers'],
+                                  num_workers=0,#cfg['training']['n_workers'],
                                   shuffle=True)
 
     valloader = data.DataLoader(v_loader,
                                 batch_size=1,
-                                num_workers=cfg['training']['n_workers'])
+                                num_workers=0)#cfg['training']['n_workers'])
 
     logger.info("Training on fold {}".format(cfg['data']['fold']))
     # Setup Metrics

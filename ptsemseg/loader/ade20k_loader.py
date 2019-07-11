@@ -7,9 +7,7 @@ import matplotlib.pyplot as plt
 
 from torch.utils import data
 
-#from ptsemseg.utils import recursive_glob
-from utils import recursive_glob
-
+from ptsemseg.utils import recursive_glob
 
 class ADE20KLoader(data.Dataset):
     def __init__(
@@ -21,6 +19,8 @@ class ADE20KLoader(data.Dataset):
         augmentations=None,
         img_norm=True,
         test_mode=False,
+        n_classes=150,
+        fold=None
     ):
         self.root = root
         self.split = split
@@ -62,7 +62,8 @@ class ADE20KLoader(data.Dataset):
         return img, lbl
 
     def transform(self, img, lbl):
-        img = m.imresize(img, (self.img_size[0], self.img_size[1]))  # uint8 with RGB mode
+        if self.img_size[0] != 'same':
+            img = m.imresize(img, (self.img_size[0], self.img_size[1]))  # uint8 with RGB mode
         img = img[:, :, ::-1]  # RGB -> BGR
         img = img.astype(np.float64)
         img -= self.mean
@@ -76,7 +77,8 @@ class ADE20KLoader(data.Dataset):
         lbl = self.encode_segmap(lbl)
         classes = np.unique(lbl)
         lbl = lbl.astype(float)
-        lbl = m.imresize(lbl, (self.img_size[0], self.img_size[1]), "nearest", mode="F")
+        if self.img_size[0] != 'same':
+            lbl = m.imresize(lbl, (self.img_size[0], self.img_size[1]), "nearest", mode="F")
         lbl = lbl.astype(int)
         assert np.all(classes == np.unique(lbl))
 
