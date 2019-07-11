@@ -101,9 +101,9 @@ class ADE20KLoader(data.Dataset):
     def encode_segmap(self, mask):
         # Refer : http://groups.csail.mit.edu/vision/datasets/ADE20K/code/loadAde20K.m
         mask = mask.astype(np.uint16)
-        label_mask = np.zeros((mask.shape[0], mask.shape[1]), dtype=np.uint8)
+        label_mask = np.zeros((mask.shape[0], mask.shape[1]), dtype=np.int64)
         label_mask = (mask[:, :, 0] / 10.0) * 256 + mask[:, :, 1]
-        return np.array(label_mask, dtype=np.uint8)
+        return np.array(label_mask, dtype=np.int64)
 
     def decode_segmap(self, temp, plot=False):
         # TODO:(@meetshah1995)

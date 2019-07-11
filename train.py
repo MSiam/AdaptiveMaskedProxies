@@ -75,7 +75,7 @@ def train(cfg, writer, logger):
 
     valloader = data.DataLoader(v_loader,
                                 batch_size=1,
-                                num_workers=0cfg['training']['n_workers'])
+                                num_workers=cfg['training']['n_workers'])
 
     logger.info("Training on fold {}".format(cfg['data']['fold']))
     # Setup Metrics
