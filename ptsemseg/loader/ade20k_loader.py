@@ -7,7 +7,9 @@ import matplotlib.pyplot as plt
 
 from torch.utils import data
 
-from ptsemseg.utils import recursive_glob
+#from ptsemseg.utils import recursive_glob
+from utils import recursive_glob
+import scipy.io
 
 class ADE20KLoader(data.Dataset):
     def __init__(
@@ -28,10 +30,13 @@ class ADE20KLoader(data.Dataset):
         self.augmentations = augmentations
         self.img_norm = img_norm
         self.test_mode = test_mode
-        self.n_classes = 150
+        self.n_classes = n_classes
+        self.fold = fold
+
         self.img_size = img_size if isinstance(img_size, tuple) else (img_size, img_size)
         self.mean = np.array([104.00699, 116.66877, 122.67892])
         self.files = collections.defaultdict(list)
+        self.class_names = self.parse_classes(self.root+'classes.txt')
 
         if not self.test_mode:
             for split in ["training", "validation"]:
@@ -39,6 +44,13 @@ class ADE20KLoader(data.Dataset):
                     rootdir=self.root + "images/" + self.split + "/", suffix=".jpg"
                 )
                 self.files[split] = file_list
+
+    def parse_classes(self, pth):
+        classes = [None]
+        f = open(pth, 'r')
+        for line in f:
+            classes.append(line.strip())
+        return classes
 
     def __len__(self):
         return len(self.files[self.split])
@@ -49,7 +61,7 @@ class ADE20KLoader(data.Dataset):
 
         img = m.imread(img_path)
         img = np.array(img, dtype=np.uint8)
-
+        print('Reading label ', lbl_path)
         lbl = m.imread(lbl_path)
         lbl = np.array(lbl, dtype=np.int32)
 
@@ -88,8 +100,8 @@ class ADE20KLoader(data.Dataset):
 
     def encode_segmap(self, mask):
         # Refer : http://groups.csail.mit.edu/vision/datasets/ADE20K/code/loadAde20K.m
-        mask = mask.astype(int)
-        label_mask = np.zeros((mask.shape[0], mask.shape[1]))
+        mask = mask.astype(np.uint16)
+        label_mask = np.zeros((mask.shape[0], mask.shape[1]), dtype=np.uint8)
         label_mask = (mask[:, :, 0] / 10.0) * 256 + mask[:, :, 1]
         return np.array(label_mask, dtype=np.uint8)
 
@@ -128,5 +140,6 @@ if __name__ == "__main__":
             plt.imshow(img)
             plt.show()
             for j in range(4):
-                plt.imshow(dst.decode_segmap(labels.numpy()[j]))
+                plt.imshow(labels.numpy()[j])
                 plt.show()
+                import pdb; pdb.set_trace()
