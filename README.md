@@ -16,7 +16,7 @@ Deep learning has thrived by training on large-scale datasets. However, for cont
 <img src="https://github.com/MSiam/AdaptiveMaskedProxies/blob/master/figures/adapproxy.png" width="70%" height="70%"><br><br>
 </div>
 
-**Note** There is an issue we just discovered in the evaluation and we're working on correcting the results.
+**Note** There is an issue we just discovered in the evaluation and we're working on correcting the results. The updated results are slightly better than reported in the paper, an updated version will be released soon.
 
 ## Qualitative Evaluation on PASCAL-5i
 1-way 1-shot segmentation
