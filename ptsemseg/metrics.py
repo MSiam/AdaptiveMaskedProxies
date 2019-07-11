@@ -41,8 +41,7 @@ class runningScore(object):
             tp = np.logical_and(lt_flat, lp_flat).sum()
             fp = np.logical_and(np.logical_not(lt_flat), lp_flat).sum()
             fn = np.logical_and(lt_flat, np.logical_not(lp_flat)).sum()
-            iou = tp / (tp+fp+fn)
-        return iou
+        return tp, fp, fn
 
     def update_binary(self, labels_true, label_preds):
         IOU = 0

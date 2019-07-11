@@ -73,7 +73,7 @@ class DBInterface():
     def _remove_small_objects(self, items):
         filtered_item = []
         for item in items:
-            mask = item.read_mask()
+            mask, _ = item.read_mask()
             mask[mask==16]=1
             if util.change_coordinates(mask, 32.0, 0.0).sum() > 2:
                 filtered_item.append(item)
@@ -225,10 +225,10 @@ class PairLoaderProcess(Process):
             return None, None, None
         if isinstance(player, util.ImagePlayer):
             img_item = player.image_item
-            return img_item.obj_ids, img_item.read_mask(True), img_item.read_img()
+            return img_item.obj_ids, img_item.read_mask(True)[0], img_item.read_img()
         elif isinstance(player, util.VideoPlayer):
             img_item = player.video_item.image_items[index]
-            return img_item.obj_ids, img_item.read_mask(True), img_item.read_img()
+            return img_item.obj_ids, img_item.read_mask(True)[0], img_item.read_img()
         else:
             raise Exception
 
@@ -255,6 +255,7 @@ class PairLoaderProcess(Process):
             item['second_img'] = [image2]
             item['first_label'] = labels1
             item['second_label'] = [label2]
+            item['cls_ind'] = frame2_dict['cls_ind']
 
 #        if self.deploy_mode:
 #            first_semantic_labels=[]
