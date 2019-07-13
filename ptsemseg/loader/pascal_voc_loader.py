@@ -220,7 +220,7 @@ class pascalVOCLoader(data.Dataset):
         else:
             return rgb
 
-    def setup_annotations(self):
+    def setup_annotations(self, target_path=None):
         """Sets up Berkley annotations by adding image indices to the
         `train_aug` split and pre-encode all segmentation labels into the
         common label_mask format (if this has not already been done). This
@@ -228,10 +228,11 @@ class pascalVOCLoader(data.Dataset):
         according to the description in the class docstring
         """
         sbd_path = get_data_path("sbd")
-        if self.fold is None:
-            target_path = pjoin(self.root, "SegmentationClass/pre_encoded")
-        else:
-            target_path = pjoin(self.root, "SegmentationClass/pre_encoded_"+str(self.fold))
+        if target_path is None:
+            if self.fold is None:
+                target_path = pjoin(self.root, "SegmentationClass/pre_encoded")
+            else:
+                target_path = pjoin(self.root, "SegmentationClass/pre_encoded_"+str(self.fold))
 
         if not os.path.exists(target_path):
             os.makedirs(target_path)
