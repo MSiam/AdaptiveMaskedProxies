@@ -89,6 +89,11 @@ class ADE20KLoader(data.Dataset):
                 preserve_aspect_ratio = False
                 img = m.imresize(img, (self.img_size[0], self.img_size[1]))  # uint8 with RGB mode
 
+        if len(img.shape) == 2:
+            img_temp = np.zeros((img.shape[0], img.shape[1], 3))
+            for i in range(3):
+                img_temp[:, :, i] = img
+            img = img_temp
         img = img[:, :, ::-1]  # RGB -> BGR
         img = img.astype(np.float64)
         img -= self.mean
