@@ -5,13 +5,18 @@ import torch.nn.functional as F
 from skimage.morphology import thin
 from scipy import ndimage
 
-def compute_weight(embeddings, nclasses, labels, original_weight, alpha):
+def label_exist(labels, cls_ind):
+    for l in labels:
+        if len(l[l==cls_ind].nonzero()) != 0:
+            return True
+    return False
 
+def compute_weight(embeddings, nclasses, labels, original_weight, alpha):
     imp_weight = embeddings.mean(0).squeeze()
 
     # Add imprinted weights for -ve samples that occurred in support image
     for c in range(nclasses):
-        if len(labels[labels==c]) != 0:
+        if label_exist(labels, c) or c==0:
             temp = original_weight[c, ...].squeeze()
             temp = (1-alpha)*temp + alpha*imp_weight[c].cuda()
             temp = temp / temp.norm(p=2)
