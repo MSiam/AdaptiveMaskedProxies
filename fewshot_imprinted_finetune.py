@@ -29,10 +29,6 @@ from ptsemseg.schedulers import get_scheduler
 from ptsemseg.optimizers import get_optimizer
 from ptsemseg.loss import get_loss_function
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
-
-
 #torch.backends.cudnn.benchmark = True
 def save_images(sprt_image, sprt_label, qry_image, iteration, out_dir):
     cv2.imwrite(out_dir+'qry_images/%05d.png'%iteration , qry_image[0].numpy()[:, :, ::-1])
@@ -108,7 +104,9 @@ def validate(cfg, args):
                                 num_workers=1)
     if args.binary:
         running_metrics = runningScore(2)
-        iou_list = []
+        fp_list = {}
+        tp_list = {}
+        fn_list = {}
     else:
         running_metrics = runningScore(n_classes+1) #+1 indicate the novel class thats added each time
 
@@ -127,9 +125,11 @@ def validate(cfg, args):
         print('No Continual Learning of Bg Class')
         model.save_original_weights()
 
-    alpha = 0.2
+    alpha = 0.14139
     for i, (sprt_images, sprt_labels, qry_images, qry_labels,
-            original_sprt_images, original_qry_images) in enumerate(valloader):
+            original_sprt_images, original_qry_images, cls_ind) in enumerate(valloader):
+
+        cls_ind = int(cls_ind)
         print('Starting iteration ', i)
         start_time = timeit.default_timer()
         if args.out_dir != "":
@@ -182,7 +182,22 @@ def validate(cfg, args):
 
         if args.binary:
             if args.binary == 1:
-                iou_list.append(running_metrics.update_binary(gt, pred))
+                tp, fp, fn = running_metrics.update_binary_oslsm(gt, pred)
+
+                if cls_ind in fp_list.keys():
+                    fp_list[cls_ind] += fp
+                else:
+                    fp_list[cls_ind] = fp
+
+                if cls_ind in tp_list.keys():
+                    tp_list[cls_ind] += tp
+                else:
+                    tp_list[cls_ind] = tp
+
+                if cls_ind in fn_list.keys():
+                    fn_list[cls_ind] += fn
+                else:
+                    fn_list[cls_ind] = fn
             else:
                 running_metrics.update(gt, pred)
         else:
@@ -196,6 +211,8 @@ def validate(cfg, args):
 
     if args.binary:
         if args.binary == 1:
+            iou_list = [tp_list[ic]/float(max(tp_list[ic] + fp_list[ic] + fn_list[ic],1)) \
+                         for ic in tp_list.keys()]
             print("Binary Mean IoU ", np.mean(iou_list))
         else:
             score, class_iou = running_metrics.get_scores()
