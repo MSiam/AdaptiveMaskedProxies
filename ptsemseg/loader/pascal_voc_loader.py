@@ -76,7 +76,7 @@ class pascalVOCLoader(data.Dataset):
         self.fold = fold
         self.files = collections.defaultdict(list)
         self.img_size = (
-            img_size if isinstance(img_size, tuple) else (img_size, img_size)
+            img_size if isinstance(img_size, list) else [img_size, img_size]
         )
         for split in ["train", "val", "trainval"]:
             path = pjoin(self.root, "ImageSets/Segmentation", split + ".txt")
@@ -110,7 +110,7 @@ class pascalVOCLoader(data.Dataset):
         return im, lbl
 
     def transform(self, img, lbl):
-        if self.img_size == ('same', 'same'):
+        if self.img_size == ['same', 'same']:
             pass
         elif hasattr(img, 'dtype'):
             img = cv2.resize(img, self.img_size)
