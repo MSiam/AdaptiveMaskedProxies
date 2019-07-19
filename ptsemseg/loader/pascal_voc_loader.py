@@ -76,7 +76,7 @@ class pascalVOCLoader(data.Dataset):
         self.fold = fold
         self.files = collections.defaultdict(list)
         self.img_size = (
-            img_size if isinstance(img_size, list) else [img_size, img_size]
+            tuple(img_size) if isinstance(img_size, list) else (img_size, img_size)
         )
         for split in ["train", "val", "trainval"]:
             path = pjoin(self.root, "ImageSets/Segmentation", split + ".txt")
