@@ -34,15 +34,13 @@ def masked_embeddings(fmap_shape, label, fconv_norm, n_classes):
     fconv_norm = nn.functional.interpolate(fconv_norm,
                                       size=(int(label.shape[2]), int(label.shape[3])),
                                       mode='nearest')
-    fconv_pooled = torch.zeros(fmap_shape[0], n_classes+1, fmap_shape[1], 1, 1)
-    for i in range(int(fconv_norm.shape[1])):
-        temp = fconv_norm[:, i, ...]
-        for c in range(n_classes+1):
-            if len(temp[label[0]==c]) == 0:
-                tempv = 0
-            else:
-                tempv = temp[label[0]==c].mean()
-            fconv_pooled[:, c, i, 0, 0] = tempv
+    fconv_pooled = torch.zeros(fmap_shape[0], n_classes+1, fmap_shape[1], 1, 1).cuda()
+    for c in range(n_classes+1):
+        mask = torch.zeros(label[0].shape).cuda()
+        mask[label[0]==c] = 1
+        temp = fconv_norm * mask
+        if mask.max() == 1:
+            fconv_pooled[:, c, :, 0, 0] = temp.sum(2).sum(2) / (mask==1).sum(1).sum(1).float()
     return fconv_pooled
 
 def weighted_masked_embeddings(fmap_shape, label, fconv_norm, n_classes):
