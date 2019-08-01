@@ -6,14 +6,15 @@ model:
     offsetting: False
     use_scale: False
 data:
-    dataset: pascal
+    dataset: pascal5i
     fold: 0
     n_classes: 16
+    k_shot: 1
     train_split: train_aug
     val_split: val
-    img_rows: 'same'
-    img_cols: 'same'
-    path: /home/Data/VOCdevkit/VOC2012/
+    img_rows: 500
+    img_cols: 500
+    path: /home/menna/Datasets/VOCdevkit/VOC2012/
 training:
     train_iters: 300000
     batch_size: 1
