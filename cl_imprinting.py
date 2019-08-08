@@ -71,7 +71,8 @@ def validate(cfg, args):
         img_size=(cfg['data']['img_rows'], cfg['data']['img_cols']),
         augmentations=data_aug,
         fold=cfg['data']['fold'],
-        n_classes=cfg['data']['n_classes'])
+        n_classes=cfg['data']['n_classes'],
+        seed=args.seed)
 
     v_loader = data_loader(
             data_path,
@@ -79,7 +80,8 @@ def validate(cfg, args):
             split=cfg['data']['val_split'],
             img_size=(cfg['data']['img_rows'], cfg['data']['img_cols']),
             fold=cfg['data']['fold'],
-            n_classes=cfg['data']['n_classes'])
+            n_classes=cfg['data']['n_classes'],
+            seed=args.seed)
 
     n_classes = cfg['data']['n_classes']
 
@@ -225,6 +227,12 @@ if __name__ == "__main__":
         type=float,
         default=0.2,
         help="update rate in adaptive imprinting"
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=1385,
+        help="random seed"
     )
 
     args = parser.parse_args()

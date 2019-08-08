@@ -17,6 +17,7 @@ import cv2
 from ptsemseg.loader.pascal_voc_loader import pascalVOCLoader
 import pickle
 import copy
+import random
 
 def get_data_path(name):
     """Extract path to data from config file.
@@ -67,7 +68,8 @@ class ipascalVOCLoader(pascalVOCLoader):
         fold=None,
         n_tasks=5,
         classes_train=None,
-        classes_incremental=None
+        classes_incremental=None,
+        seed=1385
     ):
         super(ipascalVOCLoader, self).__init__(root, split, is_transform,
                                          img_size,augmentations, img_norm,
@@ -76,6 +78,8 @@ class ipascalVOCLoader(pascalVOCLoader):
         self.fold = fold
         self.n_tasks = n_tasks
         self.batches = None
+        self.rand_gen = random.Random()
+        self.rand_gen.seed(seed)
 
         self.current_task = None
         self.current_batch = None
@@ -83,21 +87,19 @@ class ipascalVOCLoader(pascalVOCLoader):
         # During Training mode before CL these splits are randomly generated.
         # During CL mode they are set with the previously generated splits loaded from pickle.
         self.nclasses_inc = (self.n_classes - 1) // 2
-        if 'CL' not in self.split:
-            if 'train' in self.split:
-                self.classes_train = np.arange(1, self.n_classes)
-                np.random.shuffle(self.classes_train)
-                self.classes_train = self.classes_train[:self.nclasses_inc]
-                self.classes_incremental = np.arange(1, self.n_classes)
-                remove_inds = []
-                for i in range(self.classes_incremental.shape[0]):
-                    if self.classes_incremental[i] in self.classes_train:
-                        remove_inds.append(i)
 
-                self.classes_incremental = np.delete(self.classes_incremental, remove_inds)
-            else:
-                self.classes_train = classes_train
-                self.classes_incremental = classes_incremental
+        self.classes_train = [6, 4, 5, 1, 16, 12, 3, 13, 14, 2]
+        self.classes_incremental = np.arange(1, self.n_classes)
+        remove_inds = []
+        for i in range(self.classes_incremental.shape[0]):
+            if self.classes_incremental[i] in self.classes_train:
+                remove_inds.append(i)
+
+        self.classes_incremental = np.delete(self.classes_incremental, remove_inds)
+        self.classes_train_map = {0:0, 1:1, 2:2, 3:3, 4:4, 5:5, 6:6, 12:7, 13:8, 14:9, 16:10}
+
+        if 'CL' in self.split:
+            self.rand_gen.shuffle(self.classes_incremental)
 
         self.files_dict = {}
         self.split_data()
@@ -105,14 +107,19 @@ class ipascalVOCLoader(pascalVOCLoader):
         self.batches_path_pre = pjoin(self.root, "SegmentationClass/pre_encoded_" + str(self.fold),
                                       "batches" + self.split.replace('_CL', ''))
 
-        if 'CL' not in self.split:
-            self.ignore_classes = self.classes_incremental
-            self.setup_annotations()
+        self.ignore_classes = self.classes_incremental
+        self.setup_annotations()
 
-            self.batches = self.create_batches()
+        original_split = None
+        if 'CL' in self.split:
+            original_split = self.split
+            self.split = self.split[:-3]
+        self.batches = self.create_batches()
+        if original_split is not None:
+            self.split = original_split
 
-            print('train classes ', self.classes_train)
-            print('incremental classes ', self.classes_incremental)
+        print('train classes ', self.classes_train)
+        print('incremental classes ', self.classes_incremental)
 
     def __len__(self):
         if 'CL' in self.split:
@@ -125,13 +132,19 @@ class ipascalVOCLoader(pascalVOCLoader):
         else:
             return len(self.files[self.split])
 
-    def map_labels(self, lbl, class_map):
+    def map_labels(self, lbl, class_map, pretrain=False):
         lbl = np.array(lbl.copy())
         mapped_lbl = np.zeros_like(lbl)
 
         for i in range(len(class_map)):
-            if class_map[i] in lbl:
-                mapped_lbl[lbl==class_map[i]] = i+1
+            if pretrain:
+                cls = self.classes_train_map[class_map[i]]
+            else:
+                cls = class_map[i]
+
+            if cls in lbl:
+                mapped_lbl[lbl==cls] = i+1
+
         mapped_lbl[lbl==250] = 250
         return mapped_lbl
 
@@ -146,9 +159,9 @@ class ipascalVOCLoader(pascalVOCLoader):
             lbl_path = pjoin(self.root, "SegmentationClass/pre_encoded_"+str(self.fold), im_name + ".png")
 
             #print('getting item ', im_path,' + ' , lbl_path)
-            im = Image.open(im_path)
+            im = np.array(Image.open(im_path))
             lbl = Image.open(lbl_path)
-            lbl = self.map_labels(lbl, self.classes_train)
+            lbl = self.map_labels(lbl, self.classes_train, pretrain=True)
             if self.augmentations is not None:
                 im, lbl = self.augmentations(im, lbl)
             if self.is_transform:
@@ -164,7 +177,7 @@ class ipascalVOCLoader(pascalVOCLoader):
             im = ims[index]
             lbl = lbls[index]
             if self.is_transform:
-                lbl = self.map_labels(lbl, classes)
+                lbl = self.map_labels(lbl, classes, pretrain=False)
                 im, lbl = self.transform(im[:, :, ::-1], lbl)
             im = im.unsqueeze(0)
             lbl = lbl.unsqueeze(0)
@@ -186,13 +199,23 @@ class ipascalVOCLoader(pascalVOCLoader):
                     if c in lbl:
                         self.files_dict[k][c].append(f)
 
+    def filter_seg(self, ignore_classes, label_mask):
+        class_count = 0
+        for c in range(21):
+            if c in ignore_classes:
+                label_mask[label_mask == c] = 250
+
+        if label_mask[label_mask!=250].sum() == 0: # Images with only background and ignored arent used
+            label_mask[label_mask != 250] = 250
+        return label_mask
+
     def create_batches(self):
         cpt = self.nclasses_inc//self.n_tasks
         current_classes = self.classes_train
         for t in range(self.n_tasks):
-            if os.path.exists(self.batches_path_pre+'_'+str(t)+'.pkl'):
-                print('Batch ', t, ' exists')
-                continue
+#            if os.path.exists(self.batches_path_pre+'_'+str(t)+'.pkl'):
+#                print('Batch ', t, ' exists')
+#                continue
 
             current_classes = np.concatenate((current_classes,
                                               self.classes_incremental[t*cpt:cpt*(t+1)]))
@@ -212,3 +235,32 @@ class ipascalVOCLoader(pascalVOCLoader):
             print('saved batch ', t)
             f = open(self.batches_path_pre+'_'+str(t)+'.pkl', 'wb')
             pickle.dump(batch, f)
+
+if __name__ == "__main__":
+    loader = ipascalVOCLoader('/home/eren/Data/VOCdevkit/VOC2012/',
+                               split='train_aug_CL',
+                               seed=1385,
+                               fold=4,
+                               is_transform=True,
+                               img_size=(500,500))
+    count = 5
+    # Testing Normal Mode
+#    for im, lbl in loader:
+#        plt.figure(2); plt.imshow(lbl); plt.show()
+#        count -= 1
+#        if count == 0:
+#            break
+
+    # Testing CL Mode
+    for i in range(5):
+        loader.current_task = i
+        count = 5
+        for ti, classes, im, lbl in loader:
+            print('Task ', ti, 'Current classes ', classes)
+            plt.figure(2); plt.imshow(lbl[0]); plt.show()
+            count -= 1
+            if count == 0:
+                break
+        loader.current_batch = None
+
+

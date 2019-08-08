@@ -151,8 +151,9 @@ def train(cfg, writer, logger):
 
     while i <= cfg['training']['train_iters'] and flag:
         for (images, labels) in trainloader:
-#            import matplotlib.pyplot as plt
-#            plt.figure(1);plt.imshow(np.transpose(images[0], (1,2,0)));plt.figure(2); plt.imshow(labels[0]); plt.show()
+            #import matplotlib.pyplot as plt
+            #plt.figure(1);plt.imshow(np.transpose(images[0], (1,2,0)));plt.figure(2); plt.imshow(labels[0]); plt.show()
+            #plt.figure(1);plt.imshow(labels[0]); plt.show()
 
             i += 1
             start_ts = time.time()
