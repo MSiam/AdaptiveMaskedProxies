@@ -113,9 +113,7 @@ def validate(cfg, args):
     model.load_state_dict(state)
     model.to(device)
 
-    if not args.cl:
-        print('No Continual Learning of Bg Class')
-        model.save_original_weights()
+    model.save_original_weights()
 
     alpha = 0.25821
     for i, (sprt_images, sprt_labels, qry_images, qry_labels,
@@ -133,7 +131,11 @@ def validate(cfg, args):
         qry_images = qry_images.to(device)
 
         # 1- Extract embedding and add the imprinted weights
-        model.imprint(sprt_images, sprt_labels, alpha=alpha)
+        if args.iterations_imp > 0:
+            model.iterative_imprinting(sprt_images, qry_images, sprt_labels,
+                                       alpha=alpha, itr=args.iterations_imp)
+        else:
+            model.imprint(sprt_images, sprt_labels, alpha=alpha)
 
         # 2- Infer on the query image
         model.eval()
@@ -142,12 +144,13 @@ def validate(cfg, args):
             pred = outputs.data.max(1)[1].cpu().numpy()
 
         # Reverse the last imprinting (Few shot setting only not Continual Learning setup yet)
-        model.reverse_imprinting(args.cl)
+        model.reverse_imprinting()
 
         gt = qry_labels.numpy()
         if args.binary:
             gt, pred = post_process(gt, pred)
 
+        # Accumulate FP, FN, TP
         if args.binary:
             if args.binary == 1:
                 tp, fp, fn = running_metrics.update_binary_oslsm(gt, pred)
@@ -178,6 +181,7 @@ def validate(cfg, args):
             else:
                 save_vis(outputs, pred, gt, i, args.out_dir)
 
+    # Compute Final mIoU
     if args.binary:
         if args.binary == 1:
             iou_list = [tp_list[ic]/float(max(tp_list[ic] + fp_list[ic] + fn_list[ic],1)) \
@@ -213,33 +217,11 @@ if __name__ == "__main__":
         help="Path to the saved model",
     )
     parser.add_argument(
-        "--measure_time",
-        dest="measure_time",
-        action="store_true",
-        help="Enable evaluation with time (fps) measurement |\
-                              True by default",
-    )
-    parser.add_argument(
         "--binary",
         type=int,
         default=0,
         help="Evaluate binary or full nclasses",
     )
-    parser.add_argument(
-        "--cl",
-        dest="cl",
-        action="store_true",
-        help="Evaluate with continual learning mode for background class",
-    )
-    parser.add_argument(
-        "--no-measure_time",
-        dest="measure_time",
-        action="store_false",
-        help="Disable evaluation with time (fps) measurement |\
-                              True by default",
-    )
-    parser.set_defaults(measure_time=True)
-
     parser.add_argument(
         "--out_dir",
         nargs="?",
@@ -247,13 +229,19 @@ if __name__ == "__main__":
         default="",
         help="Config file to be used",
     )
-
     parser.add_argument(
         "--fold",
         type=int,
         default=-1,
         help="fold index for pascal 5i"
     )
+    parser.add_argument(
+        "--iterations_imp",
+        type=int,
+        default=0,
+        help="iterations used for iterative refinement"
+    )
+
     args = parser.parse_args()
 
     with open(args.config) as fp:
