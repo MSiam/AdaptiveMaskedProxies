@@ -42,6 +42,10 @@ def save_vis(heatmaps, prediction, groundtruth, iteration, out_dir, fg_class=16)
     cv2.imwrite(out_dir+'pred/%05d.png'%iteration , pred)
     cv2.imwrite(out_dir+'gt/%05d.png'%iteration , groundtruth[0])
 
+def post_process16(gt):
+    gt[gt != 16] = 0
+    return gt
+
 def post_process(gt, pred):
     gt[gt != 16] = 0
     gt[gt == 16] = 1
@@ -130,6 +134,8 @@ def validate(cfg, args):
         for si in range(len(sprt_images)):
             sprt_images[si] = sprt_images[si].to(device)
             sprt_labels[si] = sprt_labels[si].to(device)
+            sprt_labels[si] = post_process16(sprt_labels[si])
+
         qry_images = qry_images.to(device)
 
         # 1- Extract embedding and add the imprinted weights
