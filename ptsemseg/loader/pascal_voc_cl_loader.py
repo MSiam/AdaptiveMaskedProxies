@@ -123,12 +123,13 @@ class ipascalVOCLoader(pascalVOCLoader):
 
     def __len__(self):
         if 'CL' in self.split:
-            if 'train' in self.split:
-                return 470
             if self.current_batch is None:
                f = open(self.batches_path_pre+'_'+str(self.current_task)+'.pkl', 'rb')
                self.current_batch = pickle.load(f)
-            return self.current_batch[2].shape[0]
+            if 'train' in self.split and self.current_batch[2].shape[0] > 470:
+                return 470
+            else:
+                return self.current_batch[2].shape[0]
         else:
             return len(self.files[self.split])
 

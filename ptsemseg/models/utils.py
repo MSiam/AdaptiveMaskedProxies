@@ -38,12 +38,7 @@ def compute_weight(embeddings, nclasses, labels, original_weight,
     # Add imprinted weights for + sample (last class)
     for c in range(nclasses, nclasses+new_n_classes):
         if label_exist(labels, c):
-            temp = original_weight[c, ...].squeeze()
-            if temp.sum() == 0:
-                temp = imp_weight[c] / imp_weight[c].norm(p=2)
-            else:
-                temp = (1-new_alpha)*temp + new_alpha*imp_weight[c].cuda()
-                temp = temp / temp.norm(p=2)
+            temp = imp_weight[c] / imp_weight[c].norm(p=2)
             original_weight[c, ...] = temp.unsqueeze(1).unsqueeze(1)
 
     weight = original_weight
@@ -54,8 +49,8 @@ def masked_embeddings(fmap_shape, label, fconv_norm, n_classes):
     fconv_norm = nn.functional.interpolate(fconv_norm,
                                       size=(int(label.shape[2]), int(label.shape[3])),
                                       mode='nearest')
-    fconv_pooled = torch.zeros(fmap_shape[0], n_classes+1, fmap_shape[1], 1, 1).cuda()
-    for c in range(n_classes+1):
+    fconv_pooled = torch.zeros(fmap_shape[0], n_classes, fmap_shape[1], 1, 1).cuda()
+    for c in range(n_classes):
         mask = torch.zeros(label[0].shape).cuda()
         mask[label[0]==c] = 1
         temp = fconv_norm * mask

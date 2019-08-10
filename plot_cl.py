@@ -6,7 +6,6 @@ import os
 def parse_file(path):
 
     f = open(path, 'r')
-    skip_lines = 0
     ious = []
     mious = []
 
@@ -22,15 +21,14 @@ def parse_file(path):
             if len(ious) == n_classes:
                 mious.append(np.nanmean(np.array(ious)))
                 ious = []
-                skip_lines = 0
     return mious
 
 cl_paths = sorted(os.listdir(sys.argv[1]))
 
 mious_list = []
 styles = ['-b', '-g', '-m', '-r', '-c', '-y']
-legends = ['Naive #1', 'Naive #10', 'Imprint 0.05', 'Imprint 0.2', 'Imprint 0.5', 'Imprint 0.9']
-for i in range(6):
+legends = ['Naive #1', 'Naive #10', 'Imprint 0.05', 'Imprint 0.02', 'Imprint 0.01']
+for i in range(5):
     mious = parse_file(sys.argv[1]+cl_paths[i])
     plt.plot(list(range(1,6)), mious, styles[i], marker='o')
 

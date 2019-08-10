@@ -43,6 +43,10 @@ def save_vis(heatmaps, prediction, groundtruth, iteration, out_dir, fg_class=16)
 def validate(cfg, args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    # Setup seeds
+    torch.manual_seed(cfg.get('seed', args.seed))
+    torch.cuda.manual_seed(cfg.get('seed', args.seed))
+
     if args.out_dir != "":
         if not os.path.exists(args.out_dir):
             os.mkdir(args.out_dir)
@@ -110,7 +114,7 @@ def validate(cfg, args):
         train_loader = data.DataLoader(t_loader,
                                   batch_size=cfg['training']['batch_size'],
                                   num_workers=cfg['training']['n_workers'],
-                                  shuffle=True)
+                                  shuffle=False)
 
         current_n_classes = original_n_classes + (taski+1)*2
 
@@ -122,7 +126,7 @@ def validate(cfg, args):
             images = images.to(device)
             labels = labels.to(device)
 
-            model.imprint(images, labels, alpha=[0.01, alpha_],
+            model.imprint(images, labels, alpha=alpha_,
                           new_n_classes=current_n_classes)
 
             if (i + 1) % cfg['training']['print_interval'] == 0:
@@ -138,7 +142,7 @@ def validate(cfg, args):
         val_loader = data.DataLoader(v_loader,
                                      batch_size=cfg['training']['batch_size'],
                                      num_workers=cfg['training']['n_workers'],
-                                     shuffle=True)
+                                     shuffle=False)
 
         # Infer on validation data of current task
         for i, (task_i, classes, images, labels) in enumerate(val_loader):

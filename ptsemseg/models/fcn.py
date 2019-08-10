@@ -132,11 +132,6 @@ class fcn8s(nn.Module):
                                                           m.kernel_size[0]))
 
     def forward(self, x):
-#        if not self.training:
-#            if self.multires:
-#                print('MultiRes Classifier with Alpha = 0.5')
-#            else:
-#                print('Vanilla Classifier with Alpha = 0.05')
         conv1 = self.conv_block1(x)
         conv2 = self.conv_block2(conv1)
         conv3 = self.conv_block3(conv2)
@@ -144,54 +139,16 @@ class fcn8s(nn.Module):
         conv5 = self.conv_block5(conv4)
         fconv = self.fconv_block(conv5)
 
-        if self.use_norm:
-            fconv = l2_norm(fconv)
-        if self.use_scale:
-            fconv = self.scale * fconv
-
         score = self.classifier(fconv)
 
-        if self.learned_billinear:
-            upscore2 = self.upscore2(score)
-            score_pool4c = self.score_pool4(conv4)[:, :, 5:5+upscore2.size()[2],
-                                                         5:5+upscore2.size()[3]]
-            upscore_pool4 = self.upscore4(upscore2 + score_pool4c)
+        score_pool4 = self.score_pool4(conv4)
+        score_pool3 = self.score_pool3(conv3)
+        score = F.upsample(score, score_pool4.size()[2:])
+        score += score_pool4
+        score = F.upsample(score, score_pool3.size()[2:])
+        score += score_pool3
 
-            score_pool3c = self.score_pool3(conv3)[:, :, 9:9+upscore_pool4.size()[2],
-                                                         9:9+upscore_pool4.size()[3]]
-
-            out = self.upscore8(score_pool3c + upscore_pool4)[:, :, 31:31+x.size()[2],
-                                                                    31:31+x.size()[3]]
-            return out.contiguous()
-        else:
-            if self.use_norm:
-                conv4 = l2_norm(conv4)
-                conv3 = l2_norm(conv3)
-
-            if self.use_scale:
-                conv4 = self.scale * conv4
-                conv3 = self.scale * conv3
-
-            if self.multires:
-                score_pool4 = self.score_pool4(conv4)
-                score_pool3 = self.score_pool3(conv3)
-                score = F.upsample(score, score_pool4.size()[2:])
-                score += score_pool4
-                score = F.upsample(score, score_pool3.size()[2:])
-                score += score_pool3
-
-            if self.offsetting:
-                pad = 100
-                if not self.training:
-                    target_size = [s+pad*2 for s in x.size()[2:]]
-                    out = F.upsample(score, target_size)
-                    out = out[:, :, pad:-pad, pad:-pad]
-                else:
-                    target_size = [s+2*pad for s in x.size()[2:]]
-                    out = F.upsample(score, target_size)
-            else:
-                out = F.upsample(score, x.size()[2:])
-
+        out = F.upsample(score, x.size()[2:])
         return out
 
     def incrementally_add_classes(self, new_n_classes):
@@ -232,29 +189,12 @@ class fcn8s(nn.Module):
         conv5 = self.conv_block5(conv4)
         fconv = self.fconv_block(conv5)
 
-        if self.use_norm_weights:
-            fconv_norm = l2_norm(fconv)
-            conv3_norm = l2_norm(conv3)
-            conv4_norm = l2_norm(conv4)
-        else:
-            fconv_norm = fconv
-            conv3_norm = conv3
-            conv4_norm = conv4
-
-        if self.weighted_mask:
-            fconv_pooled = weighted_masked_embeddings(fconv_norm.shape, label,
-                                                      fconv_norm, new_n_classes)
-            conv3_pooled = weighted_masked_embeddings(conv3_norm.shape, label,
-                                                      conv3_norm, new_n_classes)
-            conv4_pooled = weighted_masked_embeddings(conv4_norm.shape, label,
-                                                      conv4_norm, new_n_classes)
-        else:
-            fconv_pooled = masked_embeddings(fconv_norm.shape, label, fconv_norm,
-                                             new_n_classes)
-            conv3_pooled = masked_embeddings(conv3_norm.shape, label, conv3_norm,
-                                             new_n_classes)
-            conv4_pooled = masked_embeddings(conv4_norm.shape, label, conv4_norm,
-                                             new_n_classes)
+        fconv_pooled = masked_embeddings(fconv.shape, label, fconv,
+                                         new_n_classes)
+        conv3_pooled = masked_embeddings(conv3.shape, label, conv3,
+                                         new_n_classes)
+        conv4_pooled = masked_embeddings(conv4.shape, label, conv4,
+                                         new_n_classes)
 
         return fconv_pooled, conv4_pooled, conv3_pooled
 
@@ -281,8 +221,8 @@ class fcn8s(nn.Module):
             nchannels = embeddings.shape[2]
 
             weight = compute_weight(embeddings, nclasses, labels,
-                                         self.classifier[2].weight.data, alpha=alpha,
-                                         new_n_classes=new_n_classes-nclasses)
+                                    self.classifier[2].weight.data, alpha=alpha,
+                                    new_n_classes=new_n_classes-nclasses)
             self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
             self.classifier[2].weight.data = weight
 
