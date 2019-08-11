@@ -164,10 +164,6 @@ class fcn8s(nn.Module):
         conv5 = self.conv_block5(conv4)
         fconv = self.fconv_block(conv5)
 
-        fconv_norm = fconv
-        conv3_norm = conv3
-        conv4_norm = conv4
-
         fconv_pooled = masked_embeddings(fconv.shape, label, fconv,
                                          self.n_classes)
         conv3_pooled = masked_embeddings(conv3.shape, label, conv3,

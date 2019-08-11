@@ -6,9 +6,10 @@ import torch
 import numpy as np
 import scipy.misc as m
 import scipy.io as io
+import matplotlib
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import glob
-
 from PIL import Image
 from tqdm import tqdm
 from torch.utils import data
@@ -110,7 +111,7 @@ class pascalVOCLoader(data.Dataset):
         return im, lbl
 
     def transform(self, img, lbl):
-        if self.img_size == ['same', 'same']:
+        if self.img_size == ('same', 'same'):
             pass
         elif hasattr(img, 'dtype'):
             img = cv2.resize(img, self.img_size)
