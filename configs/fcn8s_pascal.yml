@@ -14,18 +14,18 @@ data:
     val_split: val
     img_rows: 500
     img_cols: 500
-    path: /home/menna/Datasets/VOCdevkit/VOC2012/
+    path: /home/menna/Datasets/VOCdevkit/VOC2012
 training:
-    train_iters: 300000
-    batch_size: 1
-    val_interval: 500
-    n_workers: 1
+    train_iters: 300
+    batch_size: 4
+    val_interval: 50
+    n_workers: 8
     print_interval: 50
     optimizer:
-        name: 'rmsprop'
-        lr: 1.0e-6
+        name: 'sgd'
+        lr: 0.0025
         weight_decay: 0.0005
-#        momentum: 0.99
+        momentum: 0.99
     loss:
         name: 'cross_entropy'
         size_average: False

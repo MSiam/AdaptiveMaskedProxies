@@ -47,13 +47,30 @@ class pascalVOC5iLoader(pascalVOCLoader):
         profile['pascal_path'] = self.root
         profile['areaRng'][1] = float('Inf')
 
-        pascal_lbls = ['background', 'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus',
+        pascal_lbls = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus',
                        'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike',
                        'person', 'potted plant', 'sheep', 'sofa', 'train', 'tv/monitor']
 
         profile['pascal_cats'] = []
-        for i in range(fold*5+1, (fold+1)*5+1):
-            profile['pascal_cats'].append(pascal_lbls[i])
+       # for i in range(fold*5+1, (fold+1)*5+1):
+       #     profile['pascal_cats'].append(pascal_lbls[i])
+
+       # code to select the 15 classes for training.
+        num_cats = len(pascal_lbls)
+        assert(num_cats%4==0)
+        val_size = int(num_cats/4)
+        #assert(fold<4)
+        val_set = [ fold*val_size+v for v in range(val_size)]
+        train_set = [x for x in range(num_cats) if x not in val_set]
+        if split=='train_aug' or split=='val':
+            for i in train_set:
+                profile['pascal_cats'].append(pascal_lbls[i])           
+        else:
+            for i in val_set:            
+                profile['pascal_cats'].append(pascal_lbls[i]) 
+        
+        if split=='val':
+            profile['image_sets'] = ['pascal_test']
 
         profile['k_shot'] = k_shot
         profile_copy = profile.copy()
@@ -76,7 +93,7 @@ class pascalVOC5iLoader(pascalVOCLoader):
         return dictionary
 
     def __len__(self):
-        return 1000 #len(self.PLP.db_interface.db_items)
+        return len(self.PLP.db_interface.db_items)
 
     def __getitem__(self, index):
         self.out = self.PLP.load_next_frame(try_mode=False)
@@ -101,7 +118,7 @@ class pascalVOC5iLoader(pascalVOCLoader):
             if self.is_transform:
                 im1[j], lbl1[j] = self.transform(im1[j], lbl1[j])
 
-        return im1, lbl1, im2, lbl2, original_im1, original_im2, self.out['cls_ind']
+        return im1, lbl1, im2, lbl2, original_im1, original_im2
 
     def correct_im(self, im):
         im = (np.transpose(im, (0,2,3,1)))/255.
