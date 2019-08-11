@@ -81,7 +81,7 @@ def train(cfg):
         data_path,
         is_transform=True,
         split=cfg['data']['val_split'],
-        img_size=(cfg['data']['img_rows'], cfg['data']['img_cols']),
+        img_size=[cfg['data']['img_rows'], cfg['data']['img_cols']],
         n_classes=cfg['data']['n_classes'],
         fold=cfg['data']['fold'],
         binary=args.binary,
@@ -97,6 +97,7 @@ def train(cfg):
                                 num_workers=8)
 
     running_metrics = runningScore(2)
+    running_metrics_val = runningScore(2)
     iou_list = []
 
     num_classes = 2
@@ -126,7 +127,7 @@ def train(cfg):
 
 
       for j, (support_rgb, support_mask, query_rgb, query_mask, \
-              original_sprt_images, original_qry_images, _) in enumerate(trainloader):
+              original_sprt_images, original_qry_images) in enumerate(trainloader):
         #pdb.set_trace()
 
         print('Starting iteration ', i)
@@ -175,8 +176,11 @@ def train(cfg):
            with torch.no_grad():
                for k, (support_image, support_label, query_image, query_label, original_sprt_images, original_qry_images) in enumerate(valloader):
 
-                   support_image = np.asarray(support_image[0]).to(device)
-                   support_label = np.asarray(support_label[0]).to(device)
+                   support_image = support_image[0].to(device)
+                   support_label = support_label[0].to(device)
+
+                   support_label = support_label.unsqueeze(1)
+                   query_label = query_label.unsqueeze(1)
 
                    support_label,query_label = post_process(support_label, query_label)
 
@@ -184,18 +188,16 @@ def train(cfg):
                    query_label = query_label.to(device)
 
                    out = model(query_image,support_image,support_label,history_mask=torch.zeros(1,2,50,50))
-                   val_loss = loss_fn(input=out, target=query_label)
+                   val_loss = loss_fn(input=out, target=query_label[0])
 
+                   out = F.upsample(out, query_label.size()[2:])
                    pred = out.data.max(1)[1].cpu().numpy()
                    gt = query_label.data.cpu().numpy()
 
-
-                   running_metrics_val.update(gt, pred)
-                   val_loss_meter.update(val_loss.item())
+                   running_metrics_val.update(gt[0], pred)
            score, class_iou = running_metrics_val.get_scores()
 
 
-           val_loss_meter.reset()
            running_metrics_val.reset()
 
            if score["Mean IoU : \t"] >= best_iou:

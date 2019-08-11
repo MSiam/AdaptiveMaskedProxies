@@ -297,10 +297,6 @@ class ResNet(nn.Module):
         out = out + self.residule1(out_plus_history)
         out = out + self.residule2(out)
         out = out + self.residule3(out)
-
-
-
-
         global_feature=F.avg_pool2d(out,kernel_size=feature_size)
         global_feature=self.layer6_0(global_feature)
         global_feature=global_feature.expand(-1,-1,feature_size[0],feature_size[1])

@@ -14,10 +14,10 @@ data:
     val_split: val
     img_rows: 500
     img_cols: 500
-    path: /home/menna/Datasets/VOCdevkit/VOC2012
+    path: /home/eren/Data/VOCdevkit/VOC2012
 training:
-    train_iters: 300
-    batch_size: 4
+    train_iters: 3000
+    batch_size: 1
     val_interval: 50
     n_workers: 8
     print_interval: 50
