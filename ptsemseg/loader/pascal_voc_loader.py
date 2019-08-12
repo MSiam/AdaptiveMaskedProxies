@@ -7,7 +7,7 @@ import numpy as np
 import scipy.misc as m
 import scipy.io as io
 import matplotlib
-matplotlib.use('agg')
+#matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import glob
 from PIL import Image
@@ -120,6 +120,8 @@ class pascalVOCLoader(data.Dataset):
             img = img.resize((self.img_size[0], self.img_size[1]))  # uint8 with RGB mode
             lbl = lbl.resize((self.img_size[0], self.img_size[1]))
 
+        if int(torch.__version__.split('.')[0]) > 0:
+            img /= 255.0
         img = self.tf(img)
         lbl = torch.from_numpy(np.array(lbl)).long()
         lbl[lbl == 255] = 0
