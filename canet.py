@@ -80,7 +80,7 @@ def train(cfg):
     v_loader = data_loader(
         data_path,
         is_transform=True,
-        split=cfg['data']['val_split'],
+        split=cfg['data']['train_split'],
         img_size=[cfg['data']['img_rows'], cfg['data']['img_cols']],
         n_classes=cfg['data']['n_classes'],
         fold=cfg['data']['fold'],

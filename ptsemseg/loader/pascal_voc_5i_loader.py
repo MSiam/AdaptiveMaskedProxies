@@ -62,13 +62,13 @@ class pascalVOC5iLoader(pascalVOCLoader):
         #assert(fold<4)
         val_set = [ fold*val_size+v for v in range(val_size)]
         train_set = [x for x in range(num_cats) if x not in val_set]
-        if split=='train_aug' or split=='val':
+        if split=='train_aug':
             for i in train_set:
-                profile['pascal_cats'].append(pascal_lbls[i])           
+                profile['pascal_cats'].append(pascal_lbls[i])
         else:
-            for i in val_set:            
-                profile['pascal_cats'].append(pascal_lbls[i]) 
-        
+            for i in val_set:
+                profile['pascal_cats'].append(pascal_lbls[i])
+
         if split=='val':
             profile['image_sets'] = ['pascal_test']
 
@@ -118,7 +118,7 @@ class pascalVOC5iLoader(pascalVOCLoader):
             if self.is_transform:
                 im1[j], lbl1[j] = self.transform(im1[j], lbl1[j])
 
-        return im1, lbl1, im2, lbl2, original_im1, original_im2
+        return im1, lbl1, im2, lbl2, original_im1, original_im2, self.out['cls_ind']
 
     def correct_im(self, im):
         im = (np.transpose(im, (0,2,3,1)))/255.
