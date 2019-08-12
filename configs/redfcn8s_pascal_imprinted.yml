@@ -1,5 +1,5 @@
 model:
-    arch: reduced_fcn8s
+    arch: hrnet
     lower_dim: True
     weighted_mask: False
     use_norm: False

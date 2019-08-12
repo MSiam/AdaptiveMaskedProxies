@@ -18,8 +18,12 @@ import torch
 import torch.nn as nn
 import torch._utils
 import torch.nn.functional as F
+import copy
 
 from .sync_bn.inplace_abn.bn import InPlaceABNSync
+from ptsemseg.models.utils import freeze_weights, \
+                                  masked_embeddings, \
+                                  compute_weight
 
 BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 BN_MOMENTUM = 0.01
@@ -259,7 +263,7 @@ blocks_dict = {
 
 class HighResolutionNet(nn.Module):
 
-    def __init__(self, config, **kwargs):
+    def __init__(self, config, n_classes=21, **kwargs):
         extra = config.MODEL.EXTRA
         super(HighResolutionNet, self).__init__()
 
@@ -304,6 +308,7 @@ class HighResolutionNet(nn.Module):
             self.stage4_cfg, num_channels, multi_scale_output=True)
         last_inp_channels = np.int(np.sum(pre_stage_channels))
 
+        self.n_classes = n_classes
         self.last_layer = nn.Sequential(
             nn.Conv2d(
                 in_channels=last_inp_channels,
@@ -315,7 +320,7 @@ class HighResolutionNet(nn.Module):
             nn.ReLU(inplace=False),
             nn.Conv2d(
                 in_channels=last_inp_channels,
-                out_channels=config.DATASET.NUM_CLASSES,
+                out_channels=self.n_classes,
                 kernel_size=extra.FINAL_CONV_KERNEL,
                 stride=1,
                 padding=1 if extra.FINAL_CONV_KERNEL == 3 else 0)
@@ -403,6 +408,62 @@ class HighResolutionNet(nn.Module):
 
         return nn.Sequential(*modules), num_inchannels
 
+    def extract(self, x, label):
+        x_shape = x.size()[2:]
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.relu(x)
+        x = self.layer1(x)
+
+        x_list = []
+        for i in range(self.stage2_cfg['NUM_BRANCHES']):
+            if self.transition1[i] is not None:
+                x_list.append(self.transition1[i](x))
+            else:
+                x_list.append(x)
+        y_list = self.stage2(x_list)
+
+        x_list = []
+        for i in range(self.stage3_cfg['NUM_BRANCHES']):
+            if self.transition2[i] is not None:
+                if i < self.stage2_cfg['NUM_BRANCHES']:
+                    x_list.append(self.transition2[i](y_list[i]))
+                else:
+                    x_list.append(self.transition2[i](y_list[-1]))
+            else:
+                x_list.append(y_list[i])
+        y_list = self.stage3(x_list)
+
+        x_list = []
+        for i in range(self.stage4_cfg['NUM_BRANCHES']):
+            if self.transition3[i] is not None:
+                if i < self.stage3_cfg['NUM_BRANCHES']:
+                    x_list.append(self.transition3[i](y_list[i]))
+                else:
+                    x_list.append(self.transition3[i](y_list[-1]))
+            else:
+                x_list.append(y_list[i])
+        x = self.stage4(x_list)
+
+        # Upsampling
+        x0_h, x0_w = x[0].size(2), x[0].size(3)
+        x1 = F.upsample(x[1], size=(x0_h, x0_w), mode='bilinear')
+        x2 = F.upsample(x[2], size=(x0_h, x0_w), mode='bilinear')
+        x3 = F.upsample(x[3], size=(x0_h, x0_w), mode='bilinear')
+
+        x = torch.cat([x[0], x1, x2, x3], 1)
+
+        for i in range(3):
+            x = self.last_layer[i](x)
+
+        fconv_pooled = masked_embeddings(x.shape, label, x,
+                                         self.n_classes)
+
+        return fconv_pooled
+
     def forward(self, x):
         x_shape = x.size()[2:]
         x = self.conv1(x)
@@ -455,6 +516,41 @@ class HighResolutionNet(nn.Module):
         x = F.upsample(x, x_shape)
 
         return x
+
+    def imprint(self, images, labels, alpha):
+        with torch.no_grad():
+            embeddings = None
+            for ii, ll in zip(images, labels):
+                #ii = ii.unsqueeze(0)
+                ll = ll[0]
+                if embeddings is None:
+                    embeddings = self.extract(ii, ll)
+                else:
+                    embeddings_ = self.extract(ii, ll)
+                    embeddings = torch.cat((embeddings, embeddings_), 0)
+
+            # Imprint weights for last score layer
+            nclasses = self.n_classes
+            self.n_classes = 17
+            nchannels = embeddings.shape[2]
+            weight = compute_weight(embeddings, nclasses, labels,
+                                         self.last_layer[3].weight.data, alpha=alpha)
+            self.last_layer[3] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
+            self.last_layer[3].weight.data = weight
+
+            assert self.last_layer[3].weight.is_cuda
+            assert self.last_layer[3].weight.data.shape[1] == 720
+
+    def save_original_weights(self):
+        self.original_weights = []
+        self.original_weights.append(copy.deepcopy(self.last_layer[3].weight.data))
+
+    def reverse_imprinting(self):
+        nchannels = self.last_layer[3].weight.data.shape[1]
+        self.n_classes = 16
+        self.last_layer[3] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
+        self.last_layer[3].weight.data = copy.deepcopy(self.original_weights[0])
+        assert self.last_layer[3].weight.data.shape[1] == 720
 
     def init_weights(self, pretrained='',):
         logger.info('=> init weights from normal distribution')

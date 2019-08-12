@@ -33,7 +33,7 @@ def get_model(model_dict, n_classes, version=None):
         model = model(n_classes=n_classes, **param_dict)
     elif name == "hrnet" and int(torch.__version__.split('.')[0]) == 0:
         cfg.merge_from_file('/home/eren/Work/AdaptiveMaskedImprinting/ptsemseg/models/seg_hrnet_w48_train_512x1024_sgd_lr1e-2_wd5e-4_bs_12_epoch484.yaml')
-        model = HighResolutionNet(cfg)
+        model = HighResolutionNet(cfg, n_classes=n_classes)
         model.init_weights(cfg.MODEL.PRETRAINED)
     elif name == "mrcnn" and int(torch.__version__.split('.')[0]) > 0:
         exp_dict = {"model":"MRCNN",
