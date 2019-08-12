@@ -404,6 +404,7 @@ class HighResolutionNet(nn.Module):
         return nn.Sequential(*modules), num_inchannels
 
     def forward(self, x):
+        x_shape = x.size()[2:]
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -451,6 +452,7 @@ class HighResolutionNet(nn.Module):
         x = torch.cat([x[0], x1, x2, x3], 1)
 
         x = self.last_layer(x)
+        x = F.upsample(x, x_shape)
 
         return x
 
