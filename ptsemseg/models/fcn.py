@@ -235,7 +235,8 @@ class fcn8s(nn.Module):
 
         return fconv_pooled, conv4_pooled, conv3_pooled
 
-    def imprint(self, images, labels, alpha):
+    def imprint(self, images, labels, alpha, ncls, rnd, decorr):
+        self.n_classes = ncls
         with torch.no_grad():
             embeddings = None
             for ii, ll in zip(images, labels):
@@ -250,24 +251,35 @@ class fcn8s(nn.Module):
                     vearly_embeddings = torch.cat((vearly_embeddings, vearly_embeddings_), 0)
 
             # Imprint weights for last score layer
-            nclasses = self.n_classes
-            self.n_classes = 17
             nchannels = embeddings.shape[2]
+            device = torch.device("cuda")
 
-            weight = compute_weight(embeddings, nclasses, labels,
-                                         self.classifier[2].weight.data, alpha=alpha)
             self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
-            self.classifier[2].weight.data = weight
+            if not rnd:
+                weight = compute_weight(embeddings, self.n_classes, labels,
+                                             self.classifier[2].weight.data,
+                                             alpha=alpha, decorrelate=decorr)
+                self.classifier[2].weight.data = weight.cuda()
+            else:
+                self.classifier[2].to(device)
 
-            weight4 = compute_weight(early_embeddings, nclasses, labels,
-                                     self.score_pool4.weight.data, alpha=alpha)
             self.score_pool4 = nn.Conv2d(self.score_channels[0], self.n_classes, 1, bias=False)
-            self.score_pool4.weight.data = weight4
+            if not rnd:
+                weight4 = compute_weight(early_embeddings, self.n_classes, labels,
+                                         self.score_pool4.weight.data,
+                                         alpha=alpha, decorrelate=decorr)
+                self.score_pool4.weight.data = weight4.cuda()
+            else:
+                self.score_pool4.to(device)
 
-            weight3 = compute_weight(vearly_embeddings, nclasses, labels,
-                                     self.score_pool3.weight.data, alpha=alpha)
             self.score_pool3 = nn.Conv2d(self.score_channels[1], self.n_classes, 1, bias=False)
-            self.score_pool3.weight.data = weight3
+            if not rnd:
+                weight3 = compute_weight(vearly_embeddings, self.n_classes, labels,
+                                         self.score_pool3.weight.data,
+                                         alpha=alpha, decorrelate=decorr)
+                self.score_pool3.weight.data = weight3.cuda()
+            else:
+                self.score_pool3.to(device)
 
             assert self.classifier[2].weight.is_cuda
             assert self.score_pool3.weight.is_cuda
@@ -287,7 +299,7 @@ class fcn8s(nn.Module):
         nchannels = self.classifier[2].weight.data.shape[1]
         if cl:
             print('reverse with enabled continual learning')
-            self.n_classes = 16
+            self.n_classes = 21
             weight = copy.deepcopy(self.classifier[2].weight.data[:-1, ...])
             self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
             self.classifier[2].weight.data = weight
@@ -301,7 +313,7 @@ class fcn8s(nn.Module):
             self.score_pool3.weight.data = weight_sp3
         else:
             print('No Continual Learning for Bg')
-            self.n_classes = 16
+            self.n_classes = 21
             self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
             self.classifier[2].weight.data = copy.deepcopy(self.original_weights[0])
 

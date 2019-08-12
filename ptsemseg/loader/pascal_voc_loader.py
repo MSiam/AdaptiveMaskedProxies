@@ -76,7 +76,7 @@ class pascalVOCLoader(data.Dataset):
         self.fold = fold
         self.files = collections.defaultdict(list)
         self.img_size = (
-            tuple(img_size) if isinstance(img_size, list) else (img_size, img_size)
+            img_size if isinstance(img_size, tuple) else (img_size, img_size)
         )
         for split in ["train", "val", "trainval"]:
             path = pjoin(self.root, "ImageSets/Segmentation", split + ".txt")
@@ -110,7 +110,7 @@ class pascalVOCLoader(data.Dataset):
         return im, lbl
 
     def transform(self, img, lbl):
-        if self.img_size == ['same', 'same']:
+        if self.img_size == ('same', 'same'):
             pass
         elif hasattr(img, 'dtype'):
             img = cv2.resize(img, self.img_size)
@@ -220,7 +220,7 @@ class pascalVOCLoader(data.Dataset):
         else:
             return rgb
 
-    def setup_annotations(self, target_path=None):
+    def setup_annotations(self):
         """Sets up Berkley annotations by adding image indices to the
         `train_aug` split and pre-encode all segmentation labels into the
         common label_mask format (if this has not already been done). This
@@ -228,11 +228,10 @@ class pascalVOCLoader(data.Dataset):
         according to the description in the class docstring
         """
         sbd_path = get_data_path("sbd")
-        if target_path is None:
-            if self.fold is None:
-                target_path = pjoin(self.root, "SegmentationClass/pre_encoded")
-            else:
-                target_path = pjoin(self.root, "SegmentationClass/pre_encoded_"+str(self.fold))
+        if self.fold is None:
+            target_path = pjoin(self.root, "SegmentationClass/pre_encoded")
+        else:
+            target_path = pjoin(self.root, "SegmentationClass/pre_encoded_"+str(self.fold))
 
         if not os.path.exists(target_path):
             os.makedirs(target_path)

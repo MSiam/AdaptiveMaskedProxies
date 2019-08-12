@@ -31,6 +31,9 @@ def validate(cfg, args):
     data_loader = get_loader(cfg['data']['dataset'])
     data_path = cfg['data']['path']
 
+    if not 'fold' in cfg['data'].keys():
+        cfg['data']['fold'] = None
+
     loader = data_loader(
         data_path,
         split=cfg['data']['val_split'],

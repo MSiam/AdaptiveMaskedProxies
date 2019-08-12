@@ -2,7 +2,7 @@
 # https://github.com/wkentaro/pytorch-fcn/blob/master/torchfcn/utils.py
 
 import numpy as np
-
+import sklearn.metrics as metrics
 
 class runningScore(object):
     def __init__(self, n_classes):
@@ -16,6 +16,17 @@ class runningScore(object):
             minlength=n_class ** 2,
         ).reshape(n_class, n_class)
         return hist
+
+    def update_conf(self, label_trues, label_preds):
+        for lt, lp in zip(label_trues, label_preds):
+            lt_flat = lt.flatten()
+            lp_flat = lp.flatten()
+
+            lp_flat = lp_flat[lt_flat!=250]
+            lt_flat = lt_flat[lt_flat!=250]
+
+            self.confusion_matrix += metrics.confusion_matrix(
+                lt_flat, lp_flat, range(self.n_classes))
 
     def update(self, label_trues, label_preds):
         for lt, lp in zip(label_trues, label_preds):
@@ -41,7 +52,8 @@ class runningScore(object):
             tp = np.logical_and(lt_flat, lp_flat).sum()
             fp = np.logical_and(np.logical_not(lt_flat), lp_flat).sum()
             fn = np.logical_and(lt_flat, np.logical_not(lp_flat)).sum()
-        return tp, fp, fn
+            iou = tp / (tp+fp+fn)
+        return iou
 
     def update_binary(self, labels_true, label_preds):
         IOU = 0

@@ -5,28 +5,43 @@ import torch.nn.functional as F
 from skimage.morphology import thin
 from scipy import ndimage
 
-def label_exist(labels, cls_ind):
-    for l in labels:
-        if len(l[l==cls_ind].nonzero()) != 0:
-            return True
-    return False
+def decorr(weights, nclasses):
+    w_matrix = np.zeros((weights.shape[0], weights.shape[1]))
 
-def compute_weight(embeddings, nclasses, labels, original_weight, alpha):
+    for c in range(nclasses):
+        w_matrix[c, :] = weights[c, :, 0, 0]
+
+    # perform decorrelation using SVD
+    u, s, v = np.linalg.svd(w_matrix, full_matrices=True)
+
+    S = np.diag(s)
+    temp = np.zeros((u.shape[1], v.shape[0]))
+    temp[:, :u.shape[1]] = S
+    S = temp
+
+    ortho_weights = u @ S
+    for c in range(nclasses):
+        weights[c, :, 0, 0] = torch.tensor(ortho_weights[c, :])
+    return weights
+
+def compute_weight(embeddings, nclasses, labels, original_weight,
+                   alpha, decorrelate=False):
+
     imp_weight = embeddings.mean(0).squeeze()
 
     # Add imprinted weights for -ve samples that occurred in support image
     for c in range(nclasses):
-        if label_exist(labels, c) or c==0:
+        if len(labels[labels==c]) != 0:
             temp = original_weight[c, ...].squeeze()
-            temp = (1-alpha)*temp + alpha*imp_weight[c].cuda()
-            temp = temp / temp.norm(p=2)
+            temp = imp_weight[c]
+            if temp.norm(p=2) != 0:
+                temp = temp / temp.norm(p=2)
             original_weight[c, ...] = temp.unsqueeze(1).unsqueeze(1)
 
-    # Add imprinted weights for + sample (last class)
-    imp_weight[-1] = imp_weight[-1] / imp_weight[-1].norm(p=2)
-    imp_weight = imp_weight[-1].unsqueeze(0).unsqueeze(2).unsqueeze(3)
-    weight = torch.cat((original_weight, imp_weight.cuda()), 0)
-    return weight
+    if decorrelate:
+        original_weight = decorr(original_weight, nclasses)
+
+    return original_weight
 
 
 def masked_embeddings(fmap_shape, label, fconv_norm, n_classes):
@@ -34,13 +49,15 @@ def masked_embeddings(fmap_shape, label, fconv_norm, n_classes):
     fconv_norm = nn.functional.interpolate(fconv_norm,
                                       size=(int(label.shape[2]), int(label.shape[3])),
                                       mode='nearest')
-    fconv_pooled = torch.zeros(fmap_shape[0], n_classes+1, fmap_shape[1], 1, 1).cuda()
-    for c in range(n_classes+1):
-        mask = torch.zeros(label[0].shape).cuda()
-        mask[label[0]==c] = 1
-        temp = fconv_norm * mask
-        if mask.max() == 1:
-            fconv_pooled[:, c, :, 0, 0] = temp.sum(2).sum(2) / (mask==1).sum(1).sum(1).float()
+    fconv_pooled = torch.zeros(fmap_shape[0], n_classes, fmap_shape[1], 1, 1)
+    for i in range(int(fconv_norm.shape[1])):
+        temp = fconv_norm[:, i, ...]
+        for c in range(n_classes):
+            if len(temp[label[0]==c]) == 0:
+                tempv = 0
+            else:
+                tempv = temp[label[0]==c].mean()
+            fconv_pooled[:, c, i, 0, 0] = tempv
     return fconv_pooled
 
 def weighted_masked_embeddings(fmap_shape, label, fconv_norm, n_classes):
