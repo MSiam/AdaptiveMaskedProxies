@@ -127,7 +127,7 @@ def train(cfg):
 
 
       for j, (support_rgb, support_mask, query_rgb, query_mask, \
-              original_sprt_images, original_qry_images) in enumerate(trainloader):
+              original_sprt_images, original_qry_images, _) in enumerate(trainloader):
         #pdb.set_trace()
 
         print('Starting iteration ', i)
@@ -174,7 +174,8 @@ def train(cfg):
 
            model.eval()
            with torch.no_grad():
-               for k, (support_image, support_label, query_image, query_label, original_sprt_images, original_qry_images) in enumerate(valloader):
+               for k, (support_image, support_label, query_image, query_label, \
+                       original_sprt_images, original_qry_images, _) in enumerate(valloader):
 
                    support_image = support_image[0].to(device)
                    support_label = support_label[0].to(device)
