@@ -132,66 +132,21 @@ class fcn8s(nn.Module):
                                                           m.kernel_size[0]))
 
     def forward(self, x):
-#        if not self.training:
-#            if self.multires:
-#                print('MultiRes Classifier with Alpha = 0.5')
-#            else:
-#                print('Vanilla Classifier with Alpha = 0.05')
         conv1 = self.conv_block1(x)
         conv2 = self.conv_block2(conv1)
         conv3 = self.conv_block3(conv2)
         conv4 = self.conv_block4(conv3)
         conv5 = self.conv_block5(conv4)
         fconv = self.fconv_block(conv5)
-
-        if self.use_norm:
-            fconv = l2_norm(fconv)
-        if self.use_scale:
-            fconv = self.scale * fconv
-
         score = self.classifier(fconv)
 
-        if self.learned_billinear:
-            upscore2 = self.upscore2(score)
-            score_pool4c = self.score_pool4(conv4)[:, :, 5:5+upscore2.size()[2],
-                                                         5:5+upscore2.size()[3]]
-            upscore_pool4 = self.upscore4(upscore2 + score_pool4c)
-
-            score_pool3c = self.score_pool3(conv3)[:, :, 9:9+upscore_pool4.size()[2],
-                                                         9:9+upscore_pool4.size()[3]]
-
-            out = self.upscore8(score_pool3c + upscore_pool4)[:, :, 31:31+x.size()[2],
-                                                                    31:31+x.size()[3]]
-            return out.contiguous()
-        else:
-            if self.use_norm:
-                conv4 = l2_norm(conv4)
-                conv3 = l2_norm(conv3)
-
-            if self.use_scale:
-                conv4 = self.scale * conv4
-                conv3 = self.scale * conv3
-
-            if self.multires:
-                score_pool4 = self.score_pool4(conv4)
-                score_pool3 = self.score_pool3(conv3)
-                score = F.upsample(score, score_pool4.size()[2:])
-                score += score_pool4
-                score = F.upsample(score, score_pool3.size()[2:])
-                score += score_pool3
-
-            if self.offsetting:
-                pad = 100
-                if not self.training:
-                    target_size = [s+pad*2 for s in x.size()[2:]]
-                    out = F.upsample(score, target_size)
-                    out = out[:, :, pad:-pad, pad:-pad]
-                else:
-                    target_size = [s+2*pad for s in x.size()[2:]]
-                    out = F.upsample(score, target_size)
-            else:
-                out = F.upsample(score, x.size()[2:])
-
+        score_pool4 = self.score_pool4(conv4)
+        score_pool3 = self.score_pool3(conv3)
+        score = F.upsample(score, score_pool4.size()[2:])
+        score += score_pool4
+        score = F.upsample(score, score_pool3.size()[2:])
+        score += score_pool3
+        out = F.upsample(score, x.size()[2:])
         return out
 
     def ensemble_classify(self, preds):
@@ -209,29 +164,16 @@ class fcn8s(nn.Module):
         conv5 = self.conv_block5(conv4)
         fconv = self.fconv_block(conv5)
 
-        if self.use_norm_weights:
-            fconv_norm = l2_norm(fconv)
-            conv3_norm = l2_norm(conv3)
-            conv4_norm = l2_norm(conv4)
-        else:
-            fconv_norm = fconv
-            conv3_norm = conv3
-            conv4_norm = conv4
+        fconv_norm = fconv
+        conv3_norm = conv3
+        conv4_norm = conv4
 
-        if self.weighted_mask:
-            fconv_pooled = weighted_masked_embeddings(fconv_norm.shape, label,
-                                                      fconv_norm, self.n_classes)
-            conv3_pooled = weighted_masked_embeddings(conv3_norm.shape, label,
-                                                      conv3_norm, self.n_classes)
-            conv4_pooled = weighted_masked_embeddings(conv4_norm.shape, label,
-                                                      conv4_norm, self.n_classes)
-        else:
-            fconv_pooled = masked_embeddings(fconv_norm.shape, label, fconv_norm,
-                                             self.n_classes)
-            conv3_pooled = masked_embeddings(conv3_norm.shape, label, conv3_norm,
-                                             self.n_classes)
-            conv4_pooled = masked_embeddings(conv4_norm.shape, label, conv4_norm,
-                                             self.n_classes)
+        fconv_pooled = masked_embeddings(fconv.shape, label, fconv,
+                                         self.n_classes)
+        conv3_pooled = masked_embeddings(conv3.shape, label, conv3,
+                                         self.n_classes)
+        conv4_pooled = masked_embeddings(conv4.shape, label, conv4,
+                                         self.n_classes)
 
         return fconv_pooled, conv4_pooled, conv3_pooled
 
@@ -283,37 +225,40 @@ class fcn8s(nn.Module):
         self.original_weights.append(copy.deepcopy(self.score_pool3.weight.data))
 
 
-    def reverse_imprinting(self, cl=False):
+    def reverse_imprinting(self):
         nchannels = self.classifier[2].weight.data.shape[1]
-        if cl:
-            print('reverse with enabled continual learning')
-            self.n_classes = 16
-            weight = copy.deepcopy(self.classifier[2].weight.data[:-1, ...])
-            self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
-            self.classifier[2].weight.data = weight
+        print('No Continual Learning for Bg')
+        self.n_classes = 16
+        self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
+        self.classifier[2].weight.data = copy.deepcopy(self.original_weights[0])
 
-            weight_sp4 = copy.deepcopy(self.score_pool4.weight.data[:-1, ...])
-            self.score_pool4 = nn.Conv2d(self.score_channels[0], self.n_classes, 1, bias=False)
-            self.score_pool4.weight.data = weight_sp4
+        self.score_pool4 = nn.Conv2d(self.score_channels[0], self.n_classes, 1, bias=False)
+        self.score_pool4.weight.data = copy.deepcopy(self.original_weights[1])
 
-            weight_sp3 = copy.deepcopy(self.score_pool3.weight.data[:-1, ...])
-            self.score_pool3 = nn.Conv2d(self.score_channels[1], self.n_classes, 1, bias=False)
-            self.score_pool3.weight.data = weight_sp3
-        else:
-            print('No Continual Learning for Bg')
-            self.n_classes = 16
-            self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
-            self.classifier[2].weight.data = copy.deepcopy(self.original_weights[0])
-
-            self.score_pool4 = nn.Conv2d(self.score_channels[0], self.n_classes, 1, bias=False)
-            self.score_pool4.weight.data = copy.deepcopy(self.original_weights[1])
-
-            self.score_pool3 = nn.Conv2d(self.score_channels[1], self.n_classes, 1, bias=False)
-            self.score_pool3.weight.data = copy.deepcopy(self.original_weights[2])
+        self.score_pool3 = nn.Conv2d(self.score_channels[1], self.n_classes, 1, bias=False)
+        self.score_pool3.weight.data = copy.deepcopy(self.original_weights[2])
 
         assert self.score_pool3.weight.data.shape[1] == self.score_channels[1]
         assert self.classifier[2].weight.data.shape[1] == 256
         assert self.score_pool4.weight.data.shape[1] == self.score_channels[0]
+
+    def iterative_imprinting(self, sprt_images, qry_images, sprt_labels,
+                             alpha, itr=1):
+        self.imprint(sprt_images, sprt_labels, alpha=alpha)
+
+        it_alpha = 0.1
+        self.eval()
+        for i in range(itr):
+            outputs = self(qry_images)
+            pseudo = self.gen_pseudo(outputs)
+            self.imprint([qry_images], [pseudo], alpha=it_alpha)
+
+    def gen_pseudo(self, preds):
+        pseudo = 250*torch.zeros((preds.shape[0], preds.shape[2], preds.shape[3]))
+        preds = nn.Softmax(dim=1)(preds)
+        pseudo[preds[:,-1,:,:]>0.7] = 16
+        pseudo[preds[:,-1,:,:]<0.3] = 0
+        return pseudo
 
     def init_vgg16_params(self, vgg16, copy_fc8=False):
         blocks = [
@@ -334,17 +279,6 @@ class fcn8s(nn.Module):
                     assert l1.bias.size() == l2.bias.size()
                     l2.weight.data = l1.weight.data
                     l2.bias.data = l1.bias.data
-#        for i1, i2 in zip([0, 3], [0, 3]):
-#            l1 = vgg16.classifier[i1]
-#            l2 = self.fconv_block[i2]
-#            l2.weight.data = l1.weight.data.view(l2.weight.size())
-#            l2.bias.data = l1.bias.data.view(l2.bias.size())
-#        n_class = self.classifier[2].weight.size()[0]
-#        if copy_fc8:
-#            l1 = vgg16.classifier[6]
-#            l2 = self.classifier[2]
-#            l2.weight.data = l1.weight.data[:n_class, :].view(l2.weight.size())
-#            l2.bias.data = l1.bias.data[:n_class]
 
     def freeze_weights_extractor(self):
         freeze_weights(self.conv_block1)

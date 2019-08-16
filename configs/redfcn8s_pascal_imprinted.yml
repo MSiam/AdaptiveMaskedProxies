@@ -8,7 +8,7 @@ model:
     use_scale: False
 data:
     dataset: pascal5i
-    fold: 1
+    fold: 0
     n_classes: 16
     k_shot: 1
     train_split: train_aug
