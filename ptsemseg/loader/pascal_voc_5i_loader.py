@@ -66,6 +66,7 @@ class pascalVOC5iLoader(pascalVOCLoader):
         self.oslsm_files = self.parse_file('ptsemseg/loader/imgs_paths_%d_%d.txt'%(fold, k_shot),
                                            k_shot)
         self.prefix_lbl = 'SegmentationClass/pre_encoded/'
+        self.current_fold = fold
 
     def parse_file(self, pth_txt, k_shot):
         files = []
@@ -101,6 +102,16 @@ class pascalVOC5iLoader(pascalVOCLoader):
     def __len__(self):
         return 1000 #len(self.PLP.db_interface.db_items)
 
+    def map_labels(self, lbl, cls_idx):
+        ignore_classes = range(self.current_fold*5+1, (self.current_fold+1)*5+1)
+        class_count = 0
+        for c in range(21):
+            if c not in ignore_classes:
+                lbl[lbl == c] = class_count
+                class_count += 1
+        lbl[lbl==cls_idx] = 16
+        return lbl
+
     def __getitem__(self, index):
         pair = self.oslsm_files[index]
         #self.out = self.PLP.load_next_frame(try_mode=False)
@@ -115,7 +126,7 @@ class pascalVOC5iLoader(pascalVOCLoader):
         im2 = np.asarray(cv2.imread(pair[1]), dtype=np.float32)
         lbl2 = cv2.imread(pair[1].replace('JPEGImages', self.prefix_lbl).replace('jpg', 'png') , 0)
         lbl2 = np.asarray(lbl2, dtype=np.int32)
-        lbl2[lbl2==int(pair[-1])] = 16
+        lbl2 = self.map_labels(lbl2, int(pair[-1]))
 
         im2, lbl2 = self.transform(im2, lbl2)
 
@@ -125,7 +136,7 @@ class pascalVOC5iLoader(pascalVOCLoader):
             original_im1.append(img)
             im1.append(np.asarray(cv2.imread(pair[0][j]), dtype=np.float32))
             temp_lbl = cv2.imread(pair[0][j].replace('JPEGImages', self.prefix_lbl).replace('jpg', 'png') , 0)
-            temp_lbl[temp_lbl==int(pair[-1])] = 16
+            temp_lbl = self.map_labels(temp_lbl, int(pair[-1]))
             lbl1.append(np.asarray(temp_lbl, dtype=np.int32))
 
             if self.is_transform:
