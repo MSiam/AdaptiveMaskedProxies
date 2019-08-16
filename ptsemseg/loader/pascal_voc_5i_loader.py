@@ -109,22 +109,22 @@ class pascalVOC5iLoader(pascalVOCLoader):
         lbl1= []
 
 #        original_im2 = self.out['second_img'][0]
-        original_im2 = cv2.imread(pair[1])
+        original_im2 = cv2.imread(self.root+pair[1])
         original_im2 = cv2.resize(original_im2, self.img_size)
 
-        im2 = np.asarray(cv2.imread(pair[1]), dtype=np.float32)
-        lbl2 = cv2.imread(pair[1].replace('JPEGImages', self.prefix_lbl).replace('jpg', 'png') , 0)
+        im2 = np.asarray(cv2.imread(self.root+pair[1]), dtype=np.float32)
+        lbl2 = cv2.imread(self.root+pair[1].replace('JPEGImages', self.prefix_lbl).replace('jpg', 'png') , 0)
         lbl2 = np.asarray(lbl2, dtype=np.int32)
         lbl2[lbl2==int(pair[-1])] = 16
 
         im2, lbl2 = self.transform(im2, lbl2)
 
         for j in range(len(pair[0])):
-            img = cv2.imread(pair[0][j])
+            img = cv2.imread(self.root+pair[0][j])
             img = cv2.resize(img, self.img_size)
             original_im1.append(img)
-            im1.append(np.asarray(cv2.imread(pair[0][j]), dtype=np.float32))
-            temp_lbl = cv2.imread(pair[0][j].replace('JPEGImages', self.prefix_lbl).replace('jpg', 'png') , 0)
+            im1.append(np.asarray(cv2.imread(self.root+pair[0][j]), dtype=np.float32))
+            temp_lbl = cv2.imread(self.root+pair[0][j].replace('JPEGImages', self.prefix_lbl).replace('jpg', 'png') , 0)
             temp_lbl[temp_lbl==int(pair[-1])] = 16
             lbl1.append(np.asarray(temp_lbl, dtype=np.int32))
 
