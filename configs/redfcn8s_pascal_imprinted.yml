@@ -10,7 +10,7 @@ data:
     dataset: pascal5i
     fold: 0
     n_classes: 16
-    k_shot: 1
+    k_shot: 5
     train_split: train_aug
     val_split: val
     img_rows: 500
