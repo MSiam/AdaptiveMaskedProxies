@@ -101,7 +101,7 @@ def validate(cfg, args):
 
     valloader = data.DataLoader(loader,
                                 batch_size=cfg['training']['batch_size'],
-                                num_workers=1)
+                                num_workers=0)
     if args.binary:
         running_metrics = runningScore(2)
         fp_list = {}
@@ -121,9 +121,7 @@ def validate(cfg, args):
     optimizer_cls = get_optimizer(cfg)
     optimizer_params = {k:v for k, v in cfg['training']['optimizer'].items()
                         if k != 'name'}
-    if not args.cl:
-        print('No Continual Learning of Bg Class')
-        model.save_original_weights()
+    model.save_original_weights()
 
     alpha = 0.14139
     for i, (sprt_images, sprt_labels, qry_images, qry_labels,
@@ -174,7 +172,7 @@ def validate(cfg, args):
             pred = outputs.data.max(1)[1].cpu().numpy()
 
         # Reverse the last imprinting (Few shot setting only not Continual Learning setup yet)
-        model.reverse_imprinting(args.cl)
+        model.reverse_imprinting()
 
         gt = qry_labels.numpy()
         if args.binary:

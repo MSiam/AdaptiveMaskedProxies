@@ -105,12 +105,15 @@ class pascalVOC5iLoader(pascalVOCLoader):
     def map_labels(self, lbl, cls_idx):
         ignore_classes = range(self.current_fold*5+1, (self.current_fold+1)*5+1)
         class_count = 0
+        temp_lbl = lbl.copy()
         for c in range(21):
             if c not in ignore_classes:
-                lbl[lbl == c] = class_count
+                temp_lbl[lbl == c] = class_count
                 class_count += 1
-        lbl[lbl==cls_idx] = 16
-        return lbl
+            elif c in ignore_classes and c!=cls_idx:
+                temp_lbl[lbl == c] = 0
+        temp_lbl[lbl==cls_idx] = 16
+        return temp_lbl
 
     def __getitem__(self, index):
         pair = self.oslsm_files[index]
