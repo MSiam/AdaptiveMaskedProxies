@@ -63,6 +63,30 @@ class pascalVOC5iLoader(pascalVOCLoader):
         dbi = ss_datalayer.DBInterface(profile, fold=fold, binary=binary)
         self.PLP = ss_datalayer.PairLoaderProcess(None, None, dbi, profile_copy)
 
+        self.oslsm_files = self.parse_file('ptsemseg/loader/imgs_paths_%d_%d.txt'%(fold, k_shot),
+                                           k_shot)
+        self.prefix_lbl = 'SegmentationClass/pre_encoded/'
+        self.current_fold = fold
+
+    def parse_file(self, pth_txt, k_shot):
+        files = []
+        pair = []
+        support = []
+        f = open(pth_txt, 'r')
+        count = 0
+        for line in f:
+            if count == (k_shot+1)*2:
+                pair.append(line.split(' ')[-1].strip())
+                files.append(pair)
+                count = -1
+            elif count < k_shot:
+                support.append(line.strip())
+            elif count < k_shot+1:
+                pair = [support, line.strip()]
+                support = []
+            count += 1
+        return files
+
     def convert_d(self, string):
         s = string.replace("{" ,"")
         finalstring = s.replace("}" , "")
@@ -78,30 +102,49 @@ class pascalVOC5iLoader(pascalVOCLoader):
     def __len__(self):
         return 1000 #len(self.PLP.db_interface.db_items)
 
+    def map_labels(self, lbl, cls_idx):
+        ignore_classes = range(self.current_fold*5+1, (self.current_fold+1)*5+1)
+        class_count = 0
+        temp_lbl = lbl.copy()
+        for c in range(21):
+            if c not in ignore_classes:
+                temp_lbl[lbl == c] = class_count
+                class_count += 1
+            elif c in ignore_classes and c!=cls_idx:
+                temp_lbl[lbl == c] = 0
+        temp_lbl[lbl==cls_idx] = 16
+        return temp_lbl
+
     def __getitem__(self, index):
-        self.out = self.PLP.load_next_frame(try_mode=False)
+        pair = self.oslsm_files[index]
+        #self.out = self.PLP.load_next_frame(try_mode=False)
         original_im1 = []
         im1 = []
         lbl1= []
 
-        original_im2 = self.out['second_img'][0]
+#        original_im2 = self.out['second_img'][0]
+        original_im2 = cv2.imread(self.root+pair[1])
         original_im2 = cv2.resize(original_im2, self.img_size)
 
-        im2 = np.asarray(self.out['second_img'][0], dtype=np.float32)
-        lbl2 = np.asarray(self.out['second_label'][0], dtype=np.int32)
+        im2 = np.asarray(cv2.imread(self.root+pair[1]), dtype=np.float32)
+        lbl2 = cv2.imread(self.root+pair[1].replace('JPEGImages', self.prefix_lbl).replace('jpg', 'png') , 0)
+        lbl2 = np.asarray(lbl2, dtype=np.int32)
+        lbl2 = self.map_labels(lbl2, int(pair[-1]))
+
         im2, lbl2 = self.transform(im2, lbl2)
 
-        for j in range(len(self.out['first_img'])):
-
-            img = cv2.resize(self.out['first_img'][j], self.img_size)
+        for j in range(len(pair[0])):
+            img = cv2.imread(self.root+pair[0][j])
+            img = cv2.resize(img, self.img_size)
             original_im1.append(img)
-            im1.append(np.asarray(self.out['first_img'][j], dtype=np.float32))
-            lbl1.append(np.asarray(self.out['first_label'][j], dtype=np.int32))
+            im1.append(np.asarray(cv2.imread(self.root+pair[0][j]), dtype=np.float32))
+            temp_lbl = cv2.imread(self.root+pair[0][j].replace('JPEGImages', self.prefix_lbl).replace('jpg', 'png') , 0)
+            temp_lbl = self.map_labels(temp_lbl, int(pair[-1]))
+            lbl1.append(np.asarray(temp_lbl, dtype=np.int32))
 
             if self.is_transform:
                 im1[j], lbl1[j] = self.transform(im1[j], lbl1[j])
-
-        return im1, lbl1, im2, lbl2, original_im1, original_im2, self.out['cls_ind']
+        return im1, lbl1, im2, lbl2, original_im1, original_im2, int(pair[-1])#self.out['cls_ind']
 
     def correct_im(self, im):
         im = (np.transpose(im, (0,2,3,1)))/255.
