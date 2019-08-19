@@ -140,7 +140,11 @@ def validate(cfg, args):
         qry_images = qry_images.to(device)
 
         # 1- Extract embedding and add the imprinted weights
-        model.imprint(sprt_images, sprt_labels, alpha=alpha)
+        if args.iterations_imp > 0:
+            model.iterative_imprinting(sprt_images, qry_images, sprt_labels,
+                                       alpha=alpha, itr=args.iterations_imp)
+        else:
+            model.imprint(sprt_images, sprt_labels, alpha=alpha, random=args.rand)
 
         optimizer = optimizer_cls(model.parameters(), **optimizer_params)
         scheduler = get_scheduler(optimizer, cfg['training']['lr_schedule'])
@@ -282,7 +286,17 @@ if __name__ == "__main__":
         default=-1,
         help="fold index for pascal 5i"
     )
-
+    parser.add_argument(
+        "--rand",
+        action="store_true",
+        help="whether to use random weights then finetuning if set to True. Otherwise imprinting is used then finetuning"
+    )
+    parser.add_argument(
+        "--iterations_imp",
+        type=int,
+        default=0,
+        help="iterations used for iterative refinement"
+    )
     args = parser.parse_args()
 
     with open(args.config) as fp:

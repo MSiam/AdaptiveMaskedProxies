@@ -177,7 +177,7 @@ class fcn8s(nn.Module):
 
         return fconv_pooled, conv4_pooled, conv3_pooled
 
-    def imprint(self, images, labels, alpha):
+    def imprint(self, images, labels, alpha, random=False):
         with torch.no_grad():
             embeddings = None
             for ii, ll in zip(images, labels):
@@ -199,17 +199,29 @@ class fcn8s(nn.Module):
             weight = compute_weight(embeddings, nclasses, labels,
                                          self.classifier[2].weight.data, alpha=alpha)
             self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
-            self.classifier[2].weight.data = weight
+            if not random:
+                self.classifier[2].weight.data = weight
+            else:
+                self.classifier[2].weight.data[:-1, ...] = copy.deepcopy(self.original_weights[0])
+                self.classifier[2].weight.data = self.classifier[2].weight.data.cuda()
 
             weight4 = compute_weight(early_embeddings, nclasses, labels,
                                      self.score_pool4.weight.data, alpha=alpha)
             self.score_pool4 = nn.Conv2d(self.score_channels[0], self.n_classes, 1, bias=False)
-            self.score_pool4.weight.data = weight4
+            if not random:
+                self.score_pool4.weight.data = weight4
+            else:
+                self.score_pool4.weight.data[:-1, ...] = copy.deepcopy(self.original_weights[1])
+                self.score_pool4.weight.data = self.score_pool4.weight.data.cuda()
 
             weight3 = compute_weight(vearly_embeddings, nclasses, labels,
                                      self.score_pool3.weight.data, alpha=alpha)
             self.score_pool3 = nn.Conv2d(self.score_channels[1], self.n_classes, 1, bias=False)
-            self.score_pool3.weight.data = weight3
+            if not random:
+                self.score_pool3.weight.data = weight3
+            else:
+                self.score_pool3.weight.data[:-1, ...] = copy.deepcopy(self.original_weights[2])
+                self.score_pool3.weight.data = self.score_pool3.weight.data.cuda()
 
             assert self.classifier[2].weight.is_cuda
             assert self.score_pool3.weight.is_cuda
