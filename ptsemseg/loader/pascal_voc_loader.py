@@ -119,6 +119,9 @@ class pascalVOCLoader(data.Dataset):
             img = img.resize((self.img_size[0], self.img_size[1]))  # uint8 with RGB mode
             lbl = lbl.resize((self.img_size[0], self.img_size[1]))
 
+        if int(torch.__version__.split('.')[0]) > 0:
+            img /= 255.0
+
         img = self.tf(img)
         lbl = torch.from_numpy(np.array(lbl)).long()
         lbl[lbl == 255] = 0

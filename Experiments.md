@@ -4,44 +4,34 @@
 * Download [SBD dataset](http://home.bharathh.info/pubs/codes/SBD/download.html) + Use [train.txt](http://home.bharathh.info/pubs/codes/SBD/train_noval.txt) provided by SBD instead of PASCAL.
 * Modify config.json path to your SBD_PATH
 * In all Experiments modify in the config files "path" to the PASCAL_VOC_PATH
-* Note there are issues in reproducing the same results on higher versions of torch and torchvision. So please use the same setup we used for our experiments. (torch 0.4.0, torchvision 0.2.0)
 
-## Reproducing experiments in Table 1 with finetuning
+## Reproducing experiments in Table 1, 2, 3
 
 1. Unzip runs.zip in the same code folder
 
-2.  For 1-shot experiments , modify the fold in configs/fcn8s_pascal_imprinted_finetune.yml and use the corresponding weights.
-Use weights in path: runs/dilatedfcn8s_pascal/
-
-3. Run:
-```
-python fewshot_imprinted_finetune.py --config configs/fcn8s_pascal_imprinted_finetune.yml --model_path runs/dilatedfcn8s_pascal/dilated_fcn_fold"$foldNo"/dilated_fcn8s_pascal_best_model.pkl --binary 2
-```
-
-4. For 5-shot experiments modify the fold in configs/fcn8s_pascal_imprinted_finetune_5shot.yml and use the corresponding weights.
-Use weights in path: runs/dilatedfcn8s_pascal/
-
-5. Run:
-```
-python fewshot_imprinted_finetune.py --config configs/fcn8s_pascal_imprinted_finetune_5shot.yml --model_path runs/dilatedfcn8s_pascal/dilated_fcn_fold"$foldNo"/dilated_fcn8s_pascal_best_model.pkl --binary 2
-```
-
-## Reproducing experiments in Table 3 and Table 4 without finetuning for Reduced-DFCN8s
-1.  For 1-shot experiments, modify the fold in configs/redfcn8s_pascal_imprinted.yml and use the corresponding weights.
-Use weights in path: runs/reddilatedfcn8s_pascal/
-
 2. Run:
 ```
-python fewshot_imprinted.py --config configs/redfcn8s_pascal_imprinted.yml --model_path runs/reddilatedfcn8s_pascal/reduced_fcn_fold"$foldNo"/dilated_fcn8s_pascal_best_model.pkl --binary 1
+./run_exps.sh
 ```
-3.  For 5-shot experiments , modify kshot to 5 and the fold in configs/redfcn8s_pascal_imprinted.yml and use the corresponding weights.
-Use weights in path: runs/reddilatedfcn8s_pascal/
-
-4. Run similar to 2
+3. Saved logs corresponding to each experiment:
+    * logs_1shot: AMP-2 in Table 1
+    * logs_5shot: AMP-2 in Table 2
+    * logs_1shot_fgbg: AMP-2 in Table 3 1-shot
+    * logs_5shot_fgbg: AMP-2 in Table 3 5-shot
+    * logs_5shot_fgbg: AMP-2+FT in Table 3 5-shot
 
 ## Reproducing iPASCAL results 
 
-Coming soon ...
+1. Checkout the branch for continual learning mode **pascal_multirun**
+2. Run:
+```
+./run_exps_cl.sh
+```
+
+3. Plot the results
+```
+python plot_cl_multiruns.py cl_results_
+```
 
 ## Running Hyperparameter Search
 
