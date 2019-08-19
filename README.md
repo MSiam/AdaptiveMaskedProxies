@@ -4,7 +4,7 @@
 Implementation used in our paper:
 * Adaptive Masked Proxies for Few Shot Segmentation
 
-Accepted in Learning from Limited Labelled Data Workshop in Conjunction with ICLR'19.
+Accepted in Learning from Limited Labelled Data Workshop in Conjunction with ICLR'19
 
 * [Workshop Paper](https://openreview.net/forum?id=SkeoV4yZUV)
 * [Extended Version](https://arxiv.org/pdf/1902.11123v2.pdf)
