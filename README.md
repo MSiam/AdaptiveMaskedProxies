@@ -87,7 +87,7 @@ python fewshot_imprinted.py --binary BINARY_FLAG --config configs/fcn8s_pascal_i
 * MODEL_PATH: path for model trained on same fold testing upon.
 * OUT_DIR: output directory to save visualization if needed. (optional)
 * BINARY_FLAG: 0: evaluates on 17 classes (15 classes previously trained+Bg+New class), 1: evaluate binary with OSLSM method, 2: evaluates binary using coFCN method.
-* ITER_IMP: Iterations for the iterative adaptation on the query image for further refinement, set to 2 for results reported throughout the paper.
+* ITER_IMP: 0/1 FLAG for the iterative adaptation on the query image for further refinement, set to 1 for results reported throughout the paper.
 
 ## Configuration
 * arch: dilated_fcn8s | fcn8s | reduced_fcn8s
