@@ -74,7 +74,8 @@ To use with google Colab upload notebook with the following url
 [Demo](https://github.com/MSiam/AdaptiveMaskedProxies/blob/master/AdapProxy.ipynb)
 
 ## Train on Large Scale Data
-
+* Copy dataset/train_aug.txt to PASCALVOC_PATH/ImageSets/Segmentation/ to ensure no overlap between val and train data
+* Run the following:
 ```
 python train.py --config configs/fcn8s_pascal.yaml
 ```
