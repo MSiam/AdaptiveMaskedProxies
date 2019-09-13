@@ -16,6 +16,7 @@ from ptsemseg.models.utils import freeze_weights, \
                                   masked_embeddings, \
                                   weighted_masked_embeddings, \
                                   compute_weight
+import matplotlib.pyplot as plt
 
 # FCN 8s
 class fcn8s(nn.Module):
@@ -177,7 +178,7 @@ class fcn8s(nn.Module):
 
         return fconv_pooled, conv4_pooled, conv3_pooled
 
-    def imprint(self, images, labels, alpha, random=False):
+    def imprint(self, images, labels, alpha, random=False, new_class=True):
         with torch.no_grad():
             embeddings = None
             for ii, ll in zip(images, labels):
@@ -197,7 +198,8 @@ class fcn8s(nn.Module):
             nchannels = embeddings.shape[2]
 
             weight = compute_weight(embeddings, nclasses, labels,
-                                         self.classifier[2].weight.data, alpha=alpha)
+                                         self.classifier[2].weight.data,
+                                         alpha=alpha, new_class=new_class)
             self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
             if not random:
                 self.classifier[2].weight.data = weight
@@ -206,7 +208,8 @@ class fcn8s(nn.Module):
                 self.classifier[2].weight.data = self.classifier[2].weight.data.cuda()
 
             weight4 = compute_weight(early_embeddings, nclasses, labels,
-                                     self.score_pool4.weight.data, alpha=alpha)
+                                     self.score_pool4.weight.data,
+                                     alpha=alpha, new_class=new_class)
             self.score_pool4 = nn.Conv2d(self.score_channels[0], self.n_classes, 1, bias=False)
             if not random:
                 self.score_pool4.weight.data = weight4
@@ -215,7 +218,8 @@ class fcn8s(nn.Module):
                 self.score_pool4.weight.data = self.score_pool4.weight.data.cuda()
 
             weight3 = compute_weight(vearly_embeddings, nclasses, labels,
-                                     self.score_pool3.weight.data, alpha=alpha)
+                                     self.score_pool3.weight.data,
+                                     alpha=alpha, new_class=new_class)
             self.score_pool3 = nn.Conv2d(self.score_channels[1], self.n_classes, 1, bias=False)
             if not random:
                 self.score_pool3.weight.data = weight3
@@ -258,12 +262,15 @@ class fcn8s(nn.Module):
                              alpha, itr=1):
         self.imprint(sprt_images, sprt_labels, alpha=alpha)
 
-        it_alpha = 0.1
         self.eval()
-        for i in range(itr):
-            outputs = self(qry_images)
-            pseudo = self.gen_pseudo(outputs)
-            self.imprint([qry_images], [pseudo], alpha=it_alpha)
+        it_alpha = 0.1
+        outputs = self(qry_images)
+        pseudo = self.gen_pseudo(outputs)
+        self.imprint([qry_images], [pseudo], alpha=it_alpha, new_class=False)
+
+        # to overcome incorrect predictions in pseudolabel previously around boundary
+        pseudo = torch.zeros(pseudo.shape)
+        self.imprint([qry_images], [pseudo], alpha=it_alpha, new_class=False)
 
     def gen_pseudo(self, preds):
         pseudo = 250*torch.zeros((preds.shape[0], preds.shape[2], preds.shape[3]))

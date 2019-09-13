@@ -78,7 +78,7 @@ class pascalVOCLoader(data.Dataset):
         self.img_size = (
             tuple(img_size) if isinstance(img_size, list) else (img_size, img_size)
         )
-        for split in ["train", "val", "trainval"]:
+        for split in ["train", "val", "trainval", "train_aug"]:
             path = pjoin(self.root, "ImageSets/Segmentation", split + ".txt")
             file_list = tuple(open(path, "r"))
             file_list = [id_.rstrip() for id_ in file_list]
@@ -110,7 +110,7 @@ class pascalVOCLoader(data.Dataset):
         return im, lbl
 
     def transform(self, img, lbl):
-        if self.img_size == ['same', 'same']:
+        if self.img_size == ('same', 'same'):
             pass
         elif hasattr(img, 'dtype'):
             img = cv2.resize(img, self.img_size)
@@ -121,6 +121,8 @@ class pascalVOCLoader(data.Dataset):
 
         if int(torch.__version__.split('.')[0]) > 0:
             img /= 255.0
+        if np.asarray(img).shape[-1] != 3:
+            img = cv2.cvtColor(np.asarray(img), cv2.COLOR_BGRA2BGR)
 
         img = self.tf(img)
         lbl = torch.from_numpy(np.array(lbl)).long()
@@ -240,25 +242,27 @@ class pascalVOCLoader(data.Dataset):
         if not os.path.exists(target_path):
             os.makedirs(target_path)
         path = pjoin(sbd_path, "dataset/train.txt")
-        sbd_train_list = tuple(open(path, "r"))
-        sbd_train_list = [id_.rstrip() for id_ in sbd_train_list]
-        train_aug = self.files["train"] + sbd_train_list
+        #sbd_train_list = tuple(open(path, "r"))
+        #sbd_train_list = [id_.rstrip() for id_ in sbd_train_list]
+        train_aug = self.files["train_aug"]# + sbd_train_list
 
         # keep unique elements (stable)
-        train_aug = [
-            train_aug[i] for i in sorted(np.unique(train_aug, return_index=True)[1])
-        ]
-        self.files["train_aug"] = train_aug
-        set_diff = set(self.files["val"]) - set(train_aug)  # remove overlap
-        self.files["train_aug_val"] = list(set_diff)
+        #train_aug = [
+        #    train_aug[i] for i in sorted(np.unique(train_aug, return_index=True)[1])
+        #]
+        #self.files["train_aug"] = train_aug
+        #set_diff = set(self.files["val"]) - set(train_aug)  # remove overlap
+        #self.files["train_aug_val"] = list(set_diff)
 
         pre_encoded = glob.glob(pjoin(target_path, "*.png"))
         expected = np.unique(self.files["train_aug"] + self.files["val"]).size
 
         if len(pre_encoded) != expected:
             print("Pre-encoding segmentation masks...")
-            for ii in tqdm(sbd_train_list):
+            for ii in tqdm(self.files["train_aug"]):
                 lbl_path = pjoin(sbd_path, "dataset/cls", ii + ".mat")
+                if not os.path.exists(lbl_path):
+                    continue
                 data = io.loadmat(lbl_path)
                 lbl = data["GTcls"][0]["Segmentation"][0].astype(np.int32)
                 if self.fold is not None:
@@ -266,7 +270,19 @@ class pascalVOCLoader(data.Dataset):
                 lbl = m.toimage(lbl, high=lbl.max(), low=lbl.min())
                 m.imsave(pjoin(target_path, ii + ".png"), lbl)
 
-            for ii in tqdm(self.files["trainval"]):
+            for ii in tqdm(self.files["train_aug"]):
+                fname = ii + ".png"
+                lbl_path = pjoin(self.root, "SegmentationClass", fname)
+                if not os.path.exists(lbl_path):
+                    continue
+
+                lbl = self.encode_segmap(m.imread(lbl_path))
+                if self.fold is not None:
+                    lbl = self.filter_seg(self.fold, lbl)
+                lbl = m.toimage(lbl, high=lbl.max(), low=lbl.min())
+                m.imsave(pjoin(target_path, fname), lbl)
+
+            for ii in tqdm(self.files["val"]):
                 fname = ii + ".png"
                 lbl_path = pjoin(self.root, "SegmentationClass", fname)
                 lbl = self.encode_segmap(m.imread(lbl_path))
@@ -274,9 +290,7 @@ class pascalVOCLoader(data.Dataset):
                     lbl = self.filter_seg(self.fold, lbl)
                 lbl = m.toimage(lbl, high=lbl.max(), low=lbl.min())
                 m.imsave(pjoin(target_path, fname), lbl)
-
-#        assert expected == 9733, "unexpected dataset sizes"
-
+        assert expected == 12031, "unexpected dataset sizes"
 
 # Leave code for debugging purposes
 # import ptsemseg.augmentations as aug

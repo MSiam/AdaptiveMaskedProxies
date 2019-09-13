@@ -11,7 +11,8 @@ def label_exist(labels, cls_ind):
             return True
     return False
 
-def compute_weight(embeddings, nclasses, labels, original_weight, alpha):
+def compute_weight(embeddings, nclasses, labels, original_weight, alpha, new_class=True):
+
     imp_weight = embeddings.mean(0).squeeze()
 
     # Add imprinted weights for -ve samples that occurred in support image
@@ -23,9 +24,13 @@ def compute_weight(embeddings, nclasses, labels, original_weight, alpha):
             original_weight[c, ...] = temp.unsqueeze(1).unsqueeze(1)
 
     # Add imprinted weights for + sample (last class)
-    imp_weight[-1] = imp_weight[-1] / imp_weight[-1].norm(p=2)
-    imp_weight = imp_weight[-1].unsqueeze(0).unsqueeze(2).unsqueeze(3)
-    weight = torch.cat((original_weight, imp_weight.cuda()), 0)
+    if new_class:
+        imp_weight[-1] = imp_weight[-1] / (imp_weight[-1].norm(p=2) + 1.0e-10)
+        imp_weight = imp_weight[-1].unsqueeze(0).unsqueeze(2).unsqueeze(3)
+        weight = torch.cat((original_weight, imp_weight.cuda()), 0)
+    else:
+        weight = original_weight
+
     return weight
 
 

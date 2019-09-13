@@ -28,9 +28,9 @@ import torch.nn.functional as F
 
 #torch.backends.cudnn.benchmark = True
 def save_images(sprt_image, sprt_label, qry_image, iteration, out_dir):
-    cv2.imwrite(out_dir+'qry_images/%05d.png'%iteration , qry_image[0].numpy()[:, :, ::-1])
+    cv2.imwrite(out_dir+'qry_images/%05d.png'%iteration , qry_image[0].numpy())
     for i in range(len(sprt_image)):
-        cv2.imwrite(out_dir+'sprt_images/%05d_shot%01d.png'%(iteration,i) , sprt_image[i][0].numpy()[:, :, ::-1])
+        cv2.imwrite(out_dir+'sprt_images/%05d_shot%01d.png'%(iteration,i) , sprt_image[i][0].numpy())
         cv2.imwrite(out_dir+'sprt_gt/%05d_shot%01d.png'%(iteration,i) , sprt_label[i][0].numpy())
 
 def save_vis(heatmaps, prediction, groundtruth, iteration, out_dir, fg_class=16):
