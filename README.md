@@ -4,12 +4,9 @@
 Implementation used in our paper:
 * Adaptive Masked Proxies for Few Shot Segmentation
 
-Accepted in ICCV'19 for the Extended version.
-Accepted in Learning from Limited Labelled Data Workshop in Conjunction with ICLR'19 for the short version.
+* [Extended Version](https://arxiv.org/pdf/1902.11123v2.pdf): Accepted in ICCV'19 for the Extended version.
 
-* [Workshop Paper](https://openreview.net/forum?id=SkeoV4yZUV)
-
-* [Extended Version](https://arxiv.org/pdf/1902.11123v2.pdf)
+* [Workshop Paper](https://openreview.net/forum?id=SkeoV4yZUV): Accepted in Learning from Limited Labelled Data Workshop in Conjunction with ICLR'19.
 
 ## Description
 Deep learning has thrived by training on large-scale datasets. However, for continual learning in applications such as robotics, it is critical to incrementally update its model in a sample efficient manner. We propose a novel method that constructs the new class weights from few labelled samples in the support set without back-propagation, relying on our adaptive masked proxies approach. It utilizes multi-resolution average pooling on the output embeddings masked with the label to act as a positive proxy for the new class, while fusing it with the previously learned class signatures. Our proposed method is evaluated on PASCAL-5i dataset and outperforms the state of the art in the 5-shot semantic segmentation. Unlike previous methods, our proposed approach does not require a second branch to estimate parameters or prototypes, which enables it to be used with 2-stream motion and appearance based segmentation networks. The proposed adaptive proxies allow the method to be used with a continuous data stream. Our online adaptation scheme is evaluated on the DAVIS and FBMS video object segmentation benchmark. We further propose a novel setup for evaluating continual learning of object segmentation which we name incremental PASCAL (iPASCAL) where our method has shown to outperform the baseline method.
@@ -77,7 +74,8 @@ To use with google Colab upload notebook with the following url
 [Demo](https://github.com/MSiam/AdaptiveMaskedProxies/blob/master/AdapProxy.ipynb)
 
 ## Train on Large Scale Data
-
+* Copy dataset/train_aug.txt to PASCALVOC_PATH/ImageSets/Segmentation/ to ensure no overlap between val and train data
+* Run the following:
 ```
 python train.py --config configs/fcn8s_pascal.yaml
 ```
@@ -90,7 +88,7 @@ python fewshot_imprinted.py --binary BINARY_FLAG --config configs/fcn8s_pascal_i
 * MODEL_PATH: path for model trained on same fold testing upon.
 * OUT_DIR: output directory to save visualization if needed. (optional)
 * BINARY_FLAG: 0: evaluates on 17 classes (15 classes previously trained+Bg+New class), 1: evaluate binary with OSLSM method, 2: evaluates binary using coFCN method.
-* ITER_IMP: Iterations for the iterative adaptation on the query image for further refinement, set to 2 for results reported throughout the paper.
+* ITER_IMP: 0/1 FLAG for the iterative adaptation on the query image for further refinement, set to 1 for results reported throughout the paper.
 
 ## Configuration
 * arch: dilated_fcn8s | fcn8s | reduced_fcn8s
