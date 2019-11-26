@@ -126,7 +126,7 @@ class pascalVOC5iLoader(pascalVOCLoader):
         original_im2 = cv2.imread(self.root+pair[1])
         original_im2 = cv2.resize(original_im2, self.img_size)
 
-        im2 = np.asarray(cv2.imread(self.root+pair[1]), dtype=np.float32)
+        im2 = np.asarray(cv2.imread(self.root+pair[1])[:,:,::-1], dtype=np.float32)
         lbl2 = cv2.imread(self.root+pair[1].replace('JPEGImages', self.prefix_lbl).replace('jpg', 'png') , 0)
         lbl2 = np.asarray(lbl2, dtype=np.int32)
         lbl2 = self.map_labels(lbl2, int(pair[-1]))
@@ -137,7 +137,7 @@ class pascalVOC5iLoader(pascalVOCLoader):
             img = cv2.imread(self.root+pair[0][j])
             img = cv2.resize(img, self.img_size)
             original_im1.append(img)
-            im1.append(np.asarray(cv2.imread(self.root+pair[0][j]), dtype=np.float32))
+            im1.append(np.asarray(cv2.imread(self.root+pair[0][j])[:,:,::-1], dtype=np.float32))
             temp_lbl = cv2.imread(self.root+pair[0][j].replace('JPEGImages', self.prefix_lbl).replace('jpg', 'png') , 0)
             temp_lbl = self.map_labels(temp_lbl, int(pair[-1]))
             lbl1.append(np.asarray(temp_lbl, dtype=np.int32))
