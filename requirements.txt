@@ -6,7 +6,7 @@ torch==0.4.1
 torchvision==0.2.0 
 opencv-python
 pyyaml 
-tensorflow-gpu==1.9.0 
+tensorflow-gpu==1.15.2 
 tensorboard==1.9.0 
 scikit-image==0.14.1
 scikit-learn 
