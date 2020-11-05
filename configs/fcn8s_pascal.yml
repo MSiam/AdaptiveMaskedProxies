@@ -13,7 +13,7 @@ data:
     val_split: val
     img_rows: 'same'
     img_cols: 'same'
-    path: /home/Data/VOCdevkit/VOC2012/
+    path: /usr/work/menna/VOCdevkit/VOC2012/
 training:
     train_iters: 300000
     batch_size: 1

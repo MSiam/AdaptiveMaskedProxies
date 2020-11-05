@@ -187,6 +187,7 @@ def validate(cfg, args):
             iou_list = [tp_list[ic]/float(max(tp_list[ic] + fp_list[ic] + fn_list[ic],1)) \
                          for ic in tp_list.keys()]
             print("Binary Mean IoU ", np.mean(iou_list))
+            print("IoU List", iou_list)
         else:
             score, class_iou = running_metrics.get_scores()
             for k, v in score.items():

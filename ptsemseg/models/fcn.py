@@ -5,6 +5,8 @@ import torch.nn.functional as F
 import torch
 
 from ptsemseg.models.utils import get_upsampling_weight, l2_norm
+from ptsemseg.models.cosine_sim import CosineSimLayer
+
 from ptsemseg.loss import cross_entropy2d
 import math
 
@@ -22,24 +24,22 @@ import matplotlib.pyplot as plt
 class fcn8s(nn.Module):
     def __init__(self, n_classes=21, learned_billinear=False,
                  use_norm=False, use_scale=False, lower_dim=True,
-                 weighted_mask=False, offsetting=False, use_norm_weights=False):
+                 weighted_mask=False, offsetting=False, use_norm_weights=False,
+                 use_normalize_train=False):
         super(fcn8s, self).__init__()
         self.learned_billinear = learned_billinear
         self.n_classes = n_classes
         self.loss = functools.partial(cross_entropy2d,
                                       size_average=False)
         self.use_norm = use_norm
-        self.use_scale = use_scale
         self.use_norm_weights = use_norm_weights
+        self.use_normalize_train = use_normalize_train
 
         self.multires = True
         self.weighted_mask = weighted_mask
         self.offsetting = offsetting
 
         self.score_channels = [512, 256]
-
-        if self.use_scale:
-            self.scale = nn.Parameter(torch.FloatTensor([10]))
 
         self.conv_block1 = nn.Sequential(
             nn.Conv2d(3, 64, 3, padding=1),
@@ -87,6 +87,11 @@ class fcn8s(nn.Module):
             nn.MaxPool2d(2, stride=2, ceil_mode=True),
         )
 
+        if self.use_normalize_train:
+            last_layer_cls = CosineSimLayer
+        else:
+            last_layer_cls = nn.Conv2d
+
         if lower_dim:
             self.fconv_block = nn.Sequential(
                 nn.Conv2d(512, 4096, 1),
@@ -100,7 +105,7 @@ class fcn8s(nn.Module):
             self.classifier = nn.Sequential(
                 nn.ReLU(inplace=True),
                 nn.Dropout2d(),
-                nn.Conv2d(256, self.n_classes, 1, bias=False),
+                last_layer_cls(256, self.n_classes, 1, bias=False),
             )
         else:
             self.fconv_block = nn.Sequential(
@@ -112,11 +117,16 @@ class fcn8s(nn.Module):
             self.classifier = nn.Sequential(
                 nn.ReLU(inplace=True),
                 nn.Dropout2d(),
-                nn.Conv2d(4096, self.n_classes, 1, bias=False),
+                last_layer_cls(4096, self.n_classes, 1, bias=False),
             )
 
-        self.score_pool4 = nn.Conv2d(512, self.n_classes, 1, bias=False)
-        self.score_pool3 = nn.Conv2d(256, self.n_classes, 1, bias=False)
+        self.score_pool4 = last_layer_cls(512, self.n_classes, 1, bias=False)
+        self.score_pool3 = last_layer_cls(256, self.n_classes, 1, bias=False)
+
+        if use_normalize_train and use_scale:
+            self.classifier[2].set_scale(use_scale)
+            self.score_pool3.set_scale(use_scale)
+            self.score_pool4.set_scale(use_scale)
 
         if self.learned_billinear:
             self.upscore2 = nn.ConvTranspose2d(self.n_classes, self.n_classes, 4,
@@ -139,8 +149,8 @@ class fcn8s(nn.Module):
         conv4 = self.conv_block4(conv3)
         conv5 = self.conv_block5(conv4)
         fconv = self.fconv_block(conv5)
-        score = self.classifier(fconv)
 
+        score = self.classifier(fconv)
         score_pool4 = self.score_pool4(conv4)
         score_pool3 = self.score_pool3(conv3)
         score = F.upsample(score, score_pool4.size()[2:])
@@ -164,10 +174,6 @@ class fcn8s(nn.Module):
         conv4 = self.conv_block4(conv3)
         conv5 = self.conv_block5(conv4)
         fconv = self.fconv_block(conv5)
-
-        fconv_norm = fconv
-        conv3_norm = conv3
-        conv4_norm = conv4
 
         fconv_pooled = masked_embeddings(fconv.shape, label, fconv,
                                          self.n_classes)
