@@ -115,7 +115,7 @@ def validate(cfg, args):
 
     model.save_original_weights()
 
-    alpha = 0.25821
+    alpha = 0.0 #0.25821
     for i, (sprt_images, sprt_labels, qry_images, qry_labels,
             original_sprt_images, original_qry_images, cls_ind) in enumerate(valloader):
         cls_ind = int(cls_ind)

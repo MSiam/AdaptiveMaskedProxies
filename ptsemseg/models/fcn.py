@@ -197,72 +197,142 @@ class fcn8s(nn.Module):
                     embeddings = torch.cat((embeddings, embeddings_), 0)
                     early_embeddings = torch.cat((early_embeddings, early_embeddings_), 0)
                     vearly_embeddings = torch.cat((vearly_embeddings, vearly_embeddings_), 0)
-
             # Imprint weights for last score layer
             nclasses = self.n_classes
             self.n_classes = 17
             nchannels = embeddings.shape[2]
 
-            weight = compute_weight(embeddings, nclasses, labels,
-                                         self.classifier[2].weight.data,
-                                         alpha=alpha, new_class=new_class)
-            self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
-            if not random:
-                self.classifier[2].weight.data = weight
+            if self.use_normalize_train:
+                final_cls_weight = self.classifier[2].conv.weight.data
             else:
-                self.classifier[2].weight.data[:-1, ...] = copy.deepcopy(self.original_weights[0])
-                self.classifier[2].weight.data = self.classifier[2].weight.data.cuda()
+                final_cls_weight = self.classifier[2].weight.data
+
+            weight = compute_weight(embeddings, nclasses, labels,
+                                    final_cls_weight,
+                                    alpha=alpha, new_class=new_class)
+
+            if self.use_normalize_train:
+                self.classifier[2] = CosineSimLayer(nchannels, self.n_classes, 1, bias=False)
+                if not random:
+                    self.classifier[2].conv.weight.data = weight
+                else:
+                    self.classifier[2].conv.weight.data[:-1, ...] = copy.deepcopy(self.original_weights[0])
+                    self.classifier[2].conv.weight.data = self.classifier[2].weight.data.cuda()
+            else:
+                self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
+                if not random:
+                    self.classifier[2].weight.data = weight
+                else:
+                    self.classifier[2].weight.data[:-1, ...] = copy.deepcopy(self.original_weights[0])
+                    self.classifier[2].weight.data = self.classifier[2].conv.weight.data.cuda()
+
+            if self.use_normalize_train:
+                score4_cls_weight = self.score_pool4.conv.weight.data
+            else:
+                score4_cls_weight = self.score_pool4.weight.data
 
             weight4 = compute_weight(early_embeddings, nclasses, labels,
-                                     self.score_pool4.weight.data,
+                                     score4_cls_weight,
                                      alpha=alpha, new_class=new_class)
-            self.score_pool4 = nn.Conv2d(self.score_channels[0], self.n_classes, 1, bias=False)
-            if not random:
-                self.score_pool4.weight.data = weight4
+
+            if self.use_normalize_train:
+                self.score_pool4 = CosineSimLayer(self.score_channels[0], self.n_classes, 1, bias=False)
+                if not random:
+                    self.score_pool4.conv.weight.data = weight4
+                else:
+                    self.score_pool4.conv.weight.data[:-1, ...] = copy.deepcopy(self.original_weights[1])
+                    self.score_pool4.conv.weight.data = self.score_pool4.conv.weight.data.cuda()
+
             else:
-                self.score_pool4.weight.data[:-1, ...] = copy.deepcopy(self.original_weights[1])
-                self.score_pool4.weight.data = self.score_pool4.weight.data.cuda()
+                self.score_pool4 = nn.Conv2d(self.score_channels[0], self.n_classes, 1, bias=False)
+                if not random:
+                    self.score_pool4.weight.data = weight4
+                else:
+                    self.score_pool4.weight.data[:-1, ...] = copy.deepcopy(self.original_weights[1])
+                    self.score_pool4.weight.data = self.score_pool4.weight.data.cuda()
+
+            if self.use_normalize_train:
+                score3_cls_weight = self.score_pool3.conv.weight.data
+            else:
+                score3_cls_weight = self.score_pool3.weight.data
 
             weight3 = compute_weight(vearly_embeddings, nclasses, labels,
-                                     self.score_pool3.weight.data,
+                                     score3_cls_weight,
                                      alpha=alpha, new_class=new_class)
-            self.score_pool3 = nn.Conv2d(self.score_channels[1], self.n_classes, 1, bias=False)
-            if not random:
-                self.score_pool3.weight.data = weight3
-            else:
-                self.score_pool3.weight.data[:-1, ...] = copy.deepcopy(self.original_weights[2])
-                self.score_pool3.weight.data = self.score_pool3.weight.data.cuda()
+            if self.use_normalize_train:
+                self.score_pool3 = CosineSimLayer(self.score_channels[1], self.n_classes, 1, bias=False)
+                if not random:
+                    self.score_pool3.conv.weight.data = weight3
+                else:
+                    self.score_pool3.conv.weight.data[:-1, ...] = copy.deepcopy(self.original_weights[2])
+                    self.score_pool3.conv.weight.data = self.score_pool3.conv.weight.data.cuda()
 
-            assert self.classifier[2].weight.is_cuda
-            assert self.score_pool3.weight.is_cuda
-            assert self.score_pool4.weight.is_cuda
-            assert self.score_pool3.weight.data.shape[1] == self.score_channels[1]
-            assert self.classifier[2].weight.data.shape[1] == 256
-            assert self.score_pool4.weight.data.shape[1] == self.score_channels[0]
+                assert self.classifier[2].conv.weight.is_cuda
+                assert self.score_pool3.conv.weight.is_cuda
+                assert self.score_pool4.conv.weight.is_cuda
+                assert self.score_pool3.conv.weight.data.shape[1] == self.score_channels[1]
+                assert self.classifier[2].conv.weight.data.shape[1] == 256
+                assert self.score_pool4.conv.weight.data.shape[1] == self.score_channels[0]
+            else:
+                self.score_pool3 = nn.Conv2d(self.score_channels[1], self.n_classes, 1, bias=False)
+                if not random:
+                    self.score_pool3.weight.data = weight3
+                else:
+                    self.score_pool3.weight.data[:-1, ...] = copy.deepcopy(self.original_weights[2])
+                    self.score_pool3.weight.data = self.score_pool3.weight.data.cuda()
+
+                assert self.classifier[2].weight.is_cuda
+                assert self.score_pool3.weight.is_cuda
+                assert self.score_pool4.weight.is_cuda
+                assert self.score_pool3.weight.data.shape[1] == self.score_channels[1]
+                assert self.classifier[2].weight.data.shape[1] == 256
+                assert self.score_pool4.weight.data.shape[1] == self.score_channels[0]
 
     def save_original_weights(self):
         self.original_weights = []
-        self.original_weights.append(copy.deepcopy(self.classifier[2].weight.data))
-        self.original_weights.append(copy.deepcopy(self.score_pool4.weight.data))
-        self.original_weights.append(copy.deepcopy(self.score_pool3.weight.data))
+        if self.use_normalize_train:
+            self.original_weights.append(copy.deepcopy(self.classifier[2].conv.weight.data))
+            self.original_weights.append(copy.deepcopy(self.score_pool4.conv.weight.data))
+            self.original_weights.append(copy.deepcopy(self.score_pool3.conv.weight.data))
+        else:
+            self.original_weights.append(copy.deepcopy(self.classifier[2].weight.data))
+            self.original_weights.append(copy.deepcopy(self.score_pool4.weight.data))
+            self.original_weights.append(copy.deepcopy(self.score_pool3.weight.data))
 
 
     def reverse_imprinting(self):
-        nchannels = self.classifier[2].weight.data.shape[1]
-        print('No Continual Learning for Bg')
-        self.n_classes = 16
-        self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
-        self.classifier[2].weight.data = copy.deepcopy(self.original_weights[0])
+        if self.use_normalize_train:
+            nchannels = self.classifier[2].conv.weight.data.shape[1]
+            print('No Continual Learning for Bg')
+            self.n_classes = 16
+            self.classifier[2] = CosineSimLayer(nchannels, self.n_classes, 1, bias=False)
+            self.classifier[2].conv.weight.data = copy.deepcopy(self.original_weights[0])
 
-        self.score_pool4 = nn.Conv2d(self.score_channels[0], self.n_classes, 1, bias=False)
-        self.score_pool4.weight.data = copy.deepcopy(self.original_weights[1])
+            self.score_pool4 = CosineSimLayer(self.score_channels[0], self.n_classes, 1, bias=False)
+            self.score_pool4.conv.weight.data = copy.deepcopy(self.original_weights[1])
 
-        self.score_pool3 = nn.Conv2d(self.score_channels[1], self.n_classes, 1, bias=False)
-        self.score_pool3.weight.data = copy.deepcopy(self.original_weights[2])
+            self.score_pool3 = CosineSimLayer(self.score_channels[1], self.n_classes, 1, bias=False)
+            self.score_pool3.conv.weight.data = copy.deepcopy(self.original_weights[2])
 
-        assert self.score_pool3.weight.data.shape[1] == self.score_channels[1]
-        assert self.classifier[2].weight.data.shape[1] == 256
-        assert self.score_pool4.weight.data.shape[1] == self.score_channels[0]
+            assert self.score_pool3.conv.weight.data.shape[1] == self.score_channels[1]
+            assert self.classifier[2].conv.weight.data.shape[1] == 256
+            assert self.score_pool4.conv.weight.data.shape[1] == self.score_channels[0]
+        else:
+            nchannels = self.classifier[2].weight.data.shape[1]
+            print('No Continual Learning for Bg')
+            self.n_classes = 16
+            self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
+            self.classifier[2].weight.data = copy.deepcopy(self.original_weights[0])
+
+            self.score_pool4 = nn.Conv2d(self.score_channels[0], self.n_classes, 1, bias=False)
+            self.score_pool4.weight.data = copy.deepcopy(self.original_weights[1])
+
+            self.score_pool3 = nn.Conv2d(self.score_channels[1], self.n_classes, 1, bias=False)
+            self.score_pool3.weight.data = copy.deepcopy(self.original_weights[2])
+
+            assert self.score_pool3.weight.data.shape[1] == self.score_channels[1]
+            assert self.classifier[2].weight.data.shape[1] == 256
+            assert self.score_pool4.weight.data.shape[1] == self.score_channels[0]
 
     def iterative_imprinting(self, sprt_images, qry_images, sprt_labels,
                              alpha, itr=1):
