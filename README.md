@@ -91,6 +91,14 @@ python fewshot_imprinted.py --binary BINARY_FLAG --config configs/fcn8s_pascal_i
 * OUT_DIR: output directory to save visualization if needed. (optional)
 * BINARY_FLAG: 1: evaluate binary with OSLSM method, 2: evaluates binary using coFCN method.
 
+## Updated Results
+The updated results after using CosineSimLayer during training that normalizes both features and weights
+
+Fold | 0 | 1 | 2 | 3 | mIoU
+-----|-- |---|---|---|-----
+AMP - 1shot | 39.6 | 52.1 | 46.7 | 34.6 | 43.3
+AMP - 5shot | 44.5 | 57.3 | 50.8 | 41.4 | 48.5
+
 ## Configuration
 * arch: dilated_fcn8s | fcn8s | reduced_fcn8s
 * lower_dim: True (uses 256 nchannels in last layer) | False (uses 4096)
