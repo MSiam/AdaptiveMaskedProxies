@@ -167,59 +167,21 @@ def train(cfg, writer, logger):
                 writer.add_scalar('loss/train_loss', loss.item(), i+1)
                 time_meter.reset()
 
-            if (i + 1) % cfg['training']['val_interval'] == 0 or \
-               (i + 1) == cfg['training']['train_iters']:
-                model.eval()
-                with torch.no_grad():
-                    for i_val, (images_val, labels_val) in tqdm(enumerate(valloader)):
-                        images_val = images_val.to(device)
-                        labels_val = labels_val.to(device)
-
-                        outputs = model(images_val)
-                        val_loss = loss_fn(input=outputs, target=labels_val)
-
-                        pred = outputs.data.max(1)[1].cpu().numpy()
-                        gt = labels_val.data.cpu().numpy()
-
-
-                        running_metrics_val.update(gt, pred)
-                        val_loss_meter.update(val_loss.item())
-
-                writer.add_scalar('loss/val_loss', val_loss_meter.avg, i+1)
-                logger.info("Iter %d Loss: %.4f" % (i + 1, val_loss_meter.avg))
-
-                score, class_iou = running_metrics_val.get_scores()
-                for k, v in score.items():
-                    print(k, v)
-                    logger.info('{}: {}'.format(k, v))
-                    writer.add_scalar('val_metrics/{}'.format(k), v, i+1)
-
-                for k, v in class_iou.items():
-                    logger.info('{}: {}'.format(k, v))
-                    writer.add_scalar('val_metrics/cls_{}'.format(k), v, i+1)
-
-                val_loss_meter.reset()
-                running_metrics_val.reset()
-
-                if score["Mean IoU : \t"] >= best_iou:
-                    best_iou = score["Mean IoU : \t"]
-                    state = {
-                        "epoch": i + 1,
-                        "model_state": model.state_dict(),
-                        "optimizer_state": optimizer.state_dict(),
-                        "scheduler_state": scheduler.state_dict(),
-                        "best_iou": best_iou,
-                    }
-                    save_path = os.path.join(writer.file_writer.get_logdir(),
-                                             "{}_{}_best_model.pkl".format(
-                                                 cfg['model']['arch'],
-                                                 cfg['data']['dataset']))
-                    torch.save(state, save_path)
-
             if (i + 1) == cfg['training']['train_iters']:
                 flag = False
+                state = {
+                    "epoch": i + 1,
+                    "model_state": model.state_dict(),
+                    "optimizer_state": optimizer.state_dict(),
+                    "scheduler_state": scheduler.state_dict(),
+                    "best_iou": best_iou,
+                }
+                save_path = os.path.join(writer.file_writer.get_logdir(),
+                                         "{}_{}_best_model.pkl".format(
+                                             cfg['model']['arch'],
+                                             cfg['data']['dataset']))
+                torch.save(state, save_path)
                 break
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="config")
