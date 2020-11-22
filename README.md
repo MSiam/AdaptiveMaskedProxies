@@ -57,7 +57,7 @@ Deep learning has thrived by training on large-scale datasets. However, for cont
 
 ## Environment setup
 
-Current Code is tested on torch 0.4.1 and torchvision 0.2.0. 
+Current Code is tested on torch 0.4.1 and torchvision 0.2.0. and python 3.6.9
 
 ```
 virtualenv --system-site-packages -p python3 ./venv
@@ -73,29 +73,30 @@ Download trained weights [here](https://drive.google.com/drive/folders/1wJXetJCG
 To use with google Colab upload notebook with the following url
 [Demo](https://github.com/MSiam/AdaptiveMaskedProxies/blob/master/AdapProxy.ipynb)
 
-## Train on Large Scale Data
+## Training
 * Copy dataset/train_aug.txt to PASCALVOC_PATH/ImageSets/Segmentation/ to ensure no overlap between val and train data
+* Modify config.json to point to path for SBD
 * Run the following:
 ```
 python train.py --config configs/fcn8s_pascal.yaml
 ```
 
 ## Test few shot setting 
+* Unzip fcn8s_pasal_normalize_training.zip Which has all updated weights after fixing CosineSimLayer
 
 ```
 python fewshot_imprinted.py --binary BINARY_FLAG --config configs/fcn8s_pascal_imprinted.yml --model_path MODEL_PATH --out_dir OUT_DIR --iterations_imp ITER_IMP
 ```
 * MODEL_PATH: path for model trained on same fold testing upon.
 * OUT_DIR: output directory to save visualization if needed. (optional)
-* BINARY_FLAG: 0: evaluates on 17 classes (15 classes previously trained+Bg+New class), 1: evaluate binary with OSLSM method, 2: evaluates binary using coFCN method.
-* ITER_IMP: 0/1 FLAG for the iterative adaptation on the query image for further refinement, set to 1 for results reported throughout the paper.
+* BINARY_FLAG: 1: evaluate binary with OSLSM method, 2: evaluates binary using coFCN method.
 
 ## Configuration
 * arch: dilated_fcn8s | fcn8s | reduced_fcn8s
 * lower_dim: True (uses 256 nchannels in last layer) | False (uses 4096)
 * weighted_mask: True (uses weighted avg pooling based on distance transform)| False (uses mased avg pooling)
 * use_norm: True (normalize embeddings during inference)| False
-* use_norm_weights: True (normalize extracted embeddings) | False
+* use_normalize_train: True
 * use_scale: False: True (Learn scalar hyperaparameter) | False
 * dataset: pascal5i (few shot OSLSM setting)| pascal
 * fold: 0 | 1 | 2 | 3
@@ -124,19 +125,12 @@ To reproduce results using our dataloader instead of reading random pairs genera
 Please cite our paper if you find it useful in your research
 
 ```
-@article{DBLP:journals/corr/abs-1902-11123,
-  author    = {Mennatullah Siam and
-               Boris N. Oreshkin},
-  title     = {Adaptive Masked Weight Imprinting for Few-Shot Segmentation},
-  journal   = {CoRR},
-  volume    = {abs/1902.11123},
-  year      = {2019},
-  url       = {http://arxiv.org/abs/1902.11123},
-  archivePrefix = {arXiv},
-  eprint    = {1902.11123},
-  timestamp = {Tue, 21 May 2019 18:03:37 +0200},
-  biburl    = {https://dblp.org/rec/bib/journals/corr/abs-1902-11123},
-  bibsource = {dblp computer science bibliography, https://dblp.org}
-}
+@InProceedings{Siam_2019_ICCV,
+author = {Siam, Mennatullah and Oreshkin, Boris N. and Jagersand, Martin},
+title = {AMP: Adaptive Masked Proxies for Few-Shot Segmentation},
+booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+month = {October},
+year = {2019}
+} 
 ```
 
