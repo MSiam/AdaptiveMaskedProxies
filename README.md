@@ -67,7 +67,7 @@ pip install -r requirements.txt
 
 ## Pre-Trained Weights
 
-Download trained weights [here](https://drive.google.com/drive/folders/1wJXetJCGkT_xej8Jr8Mrj9vJUHN8EtJu?usp=sharing)
+Download trained weights [here](https://drive.google.com/drive/folders/1wJXetJCGkT_xej8Jr8Mrj9vJUHN8EtJu?usp=sharing) fcn8s_pasal_normalize_training.zip
 
 ## Python Notebook Demo
 To use with google Colab upload notebook with the following url
@@ -85,7 +85,7 @@ python train.py --config configs/fcn8s_pascal.yaml
 * Unzip fcn8s_pasal_normalize_training.zip Which has all updated weights after fixing CosineSimLayer
 
 ```
-python fewshot_imprinted.py --binary BINARY_FLAG --config configs/fcn8s_pascal_imprinted.yml --model_path MODEL_PATH --out_dir OUT_DIR --iterations_imp ITER_IMP
+python fewshot_imprinted.py --binary BINARY_FLAG --config configs/fcn8s_pascal_imprinted.yml --model_path MODEL_PATH --out_dir OUT_DIR
 ```
 * MODEL_PATH: path for model trained on same fold testing upon.
 * OUT_DIR: output directory to save visualization if needed. (optional)
