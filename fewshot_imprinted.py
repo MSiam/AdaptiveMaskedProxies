@@ -198,7 +198,8 @@ def validate(cfg, args):
             print(k, v)
         val_nclasses = model.n_classes + 1
         for i in range(val_nclasses):
-            print(i, class_iou[i])
+            if not np.isnan(class_iou[i]):
+                print(i, class_iou[i])
 
 
 if __name__ == "__main__":
@@ -220,7 +221,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--binary",
         type=int,
-        default=0,
+        default=1,
         help="Evaluate binary or full nclasses",
     )
     parser.add_argument(
