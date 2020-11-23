@@ -18,14 +18,14 @@ data:
     img_cols: 500
     path: /usr/work/menna/VOCdevkit/VOC2012/
 training:
-    train_iters: 15
+    train_iters: 5
     batch_size: 1
     val_interval: 100000000
     n_workers: 1
     print_interval: 50
     optimizer:
         name: 'rmsprop'
-        lr: 1.0e-4
+        lr: 7.6e-5
         weight_decay: 0.0005
     loss:
         name: 'cross_entropy'

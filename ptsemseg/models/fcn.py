@@ -217,7 +217,7 @@ class fcn8s(nn.Module):
                     self.classifier[2].conv.weight.data = weight
                 else:
                     self.classifier[2].conv.weight.data[:-1, ...] = copy.deepcopy(self.original_weights[0])
-                    self.classifier[2].conv.weight.data = self.classifier[2].weight.data.cuda()
+                    self.classifier[2].conv.weight.data = self.classifier[2].conv.weight.data.cuda()
             else:
                 self.classifier[2] = nn.Conv2d(nchannels, self.n_classes, 1, bias=False)
                 if not random:

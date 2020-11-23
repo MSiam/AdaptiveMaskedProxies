@@ -149,12 +149,13 @@ def validate(cfg, args):
         optimizer = optimizer_cls(model.parameters(), **optimizer_params)
         scheduler = get_scheduler(optimizer, cfg['training']['lr_schedule'])
         loss_fn = get_loss_function(cfg)
+
+        model.train()
         print('Finetuning')
         for j in range(cfg['training']['train_iters']):
+            scheduler.step()
             for b in range(len(sprt_images)):
                 torch.cuda.empty_cache()
-                scheduler.step()
-                model.train()
                 optimizer.zero_grad()
 
                 outputs = model(sprt_images[b])
